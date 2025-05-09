@@ -5,9 +5,9 @@ import LoginView from '@/views/LoginView.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import NewPasswordView from '@/views/NewPasswordView.vue'
-import DashboardView from '@/views/dashboard /DashboardView.vue'
-import SettingsView from '@/views/dashboard /SettingsView.vue'
-import ProfileView from '@/views/dashboard /ProfileView.vue'
+import DashboardView from '@/views/dashboard/DashboardView.vue'
+import SettingsView from '@/views/dashboard/SettingsView.vue'
+import ProfileView from '@/views/dashboard/ProfileView.vue'
 import HomeView from '@/views/HomeView.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

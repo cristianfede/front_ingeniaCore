@@ -10,20 +10,23 @@ export const authSetStore = defineStore('auth', {
   }),
 
   actions: {
-    async login(userData: { email: string; password: string }): Promise<boolean> {
+    async login(userData: { correo: string; password: string }): Promise<boolean> {
       const auth = new AuthService()
-      const login = await auth.login(userData.email, userData.password)
+      const login = await auth.login(userData.correo, userData.password)
 
-      if (login.errors[0]) {
+      if (login.errors?.[0]) {
         /*login.JSON({"message": "credenciales invalidas"})*/
         alert(login.errors[0].message)
+        return false
       } else {
         const token = login.token
         //Actualizar
         this.token = token
+        this.user = login.user
 
         //Almacenar
         localStorage.setItem('token', token)
+        localStorage.setItem('user', JSON.stringify(login.user))
 
         router.push('/dashboard')
         return true
