@@ -22,32 +22,28 @@
         <router-link to="/reset-password">¿Olvidó su contraseña?</router-link>
       </div>
 
-      <button type="submit">Ingresar</button>
+      <button @click="handlerLogin">Ingresar</button>
     </form>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { authSetStore } from '@/stores/AuthStore.ts'
+import { authSetStore } from '../stores/AuthStore.ts'
 
 const authStore = authSetStore()
-const router = useRouter()
-
 const email = ref('')
 const password = ref('')
 
-const handleSubmit = async () => {
+const handlerLogin = () => {
   if (!email.value || !password.value) {
     alert('Por favor, completa todos los campos')
     return
-  }
-
-  const success = await authStore.login({ email: email.value, password: password.value })
-
-  if (success) {
-    alert('Correo o contraseña incorrectos')
+  }else {
+    authStore.login({
+      email: email.value,
+      password: password.value,
+    })
   }
 }
 </script>
