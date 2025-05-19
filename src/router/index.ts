@@ -9,6 +9,8 @@ import DashboardView from '@/views/dashboard/DashboardView.vue'
 import SettingsView from '@/views/dashboard/SettingsView.vue'
 import ProfileView from '@/views/dashboard/ProfileView.vue'
 import HomeView from '@/views/HomeView.vue'
+import CrudView from '@/views/CrudView.vue'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -50,6 +52,11 @@ const router = createRouter({
     {
       path: '/profile',
       component: ProfileView,
+      meta: { layout: 'MainLayout' },
+    },
+    {
+      path: '/crud',
+      component: CrudView,
       meta: { layout: 'MainLayout' },
     },
 
