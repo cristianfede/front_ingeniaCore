@@ -12,10 +12,13 @@
 <style scoped>
 .sidebar {
   width: 250px;
-  height: 100vh;
+  min-height: 100vh;  /* se asegura que cubra mínimo el alto de pantalla */
+  height: 100%;        /* crecerá si el contenido es más largo */
   background: #2367aa;
   color: white;
   padding: 20px;
+  position: sticky;    /* se queda visible si hacés scroll */
+  top: 0;
 }
 
 ul {
