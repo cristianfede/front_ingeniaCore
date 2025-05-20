@@ -46,6 +46,28 @@ export async function obtenerUsuarios() {
   }
 }
 
+export async function actualizarUsuario(id: number, usuarioData: Partial<UsuarioData>) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/usuarios/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(usuarioData),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.mensaje || 'Error al actualizar usuario')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error al actualizar usuario:', error)
+    throw error
+  }
+}
+
 export async function eliminarUsuario(id: number) {
   try {
     const response = await fetch(`${API_BASE_URL}/usuarios/${id}`, {
