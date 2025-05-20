@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { crearUsuario, obtenerUsuarios } from '../services/userService'
+import { crearUsuario, obtenerUsuarios, actualizarUsuario, eliminarUsuario } from '../services/userService'
 
 const nombre = ref('')
 const apellido = ref('')
@@ -13,33 +13,70 @@ const snackbar = ref({
   message: '',
   color: 'success',
 })
+const isEditing = ref(false)
+const editingUserId = ref<number | null>(null)
+
+function editUser(user: any) {
+  isEditing.value = true
+  editingUserId.value = user.id
+  nombre.value = user.nombre
+  apellido.value = user.apellido
+  telefono.value = user.telefono
+  correo.value = user.correo
+  password.value = ''
+}
+
 
 async function submit() {
   snackbar.value.show = false
 
   try {
-    const nuevoUsuario = await crearUsuario({
-      nombre: nombre.value,
-      apellido: apellido.value,
-      telefono: telefono.value,
-      correo: correo.value,
-      password: password.value,
-    })
+    if (isEditing.value && editingUserId.value !== null) {
+      // Actualizar usuario
+      const actualizado = await actualizarUsuario(editingUserId.value, {
+        nombre: nombre.value,
+        apellido: apellido.value,
+        telefono: telefono.value,
+        correo: correo.value,
+        password: password.value, // si no se cambia, backend debe ignorar o dejar igual
+      })
+      //hasta aqui actualiza db
+      
+      // Actualizar la lista localmente
+      const index = usuarios.value.findIndex(u => u.id === editingUserId.value)
+      if (index !== -1) usuarios.value[index] = actualizado
 
-    usuarios.value.push(nuevoUsuario)
-    
-    snackbar.value = {
-      show: true,
-      message: 'Usuario creado exitosamente.',
-      color: 'success',
+      snackbar.value = {
+        show: true,
+        message: 'Usuario actualizado correctamente.',
+        color: 'success',
+      }
+    } else {
+      // Crear usuario nuevo
+      const nuevoUsuario = await crearUsuario({
+        nombre: nombre.value,
+        apellido: apellido.value,
+        telefono: telefono.value,
+        correo: correo.value,
+        password: password.value,
+      })
+
+      usuarios.value.push(nuevoUsuario)
+      snackbar.value = {
+        show: true,
+        message: 'Usuario creado exitosamente.',
+        color: 'success',
+      }
     }
 
-    // Limpiar formulario
+    // Limpiar formulario y estado edición
     nombre.value = ''
     apellido.value = ''
     telefono.value = ''
     correo.value = ''
     password.value = ''
+    isEditing.value = false
+    editingUserId.value = null
   } catch (err: any) {
     snackbar.value = {
       show: true,
@@ -48,6 +85,16 @@ async function submit() {
     }
   }
 }
+function cancelEdit() {
+  nombre.value = ''
+  apellido.value = ''
+  telefono.value = ''
+  correo.value = ''
+  password.value = ''
+  isEditing.value = false
+  editingUserId.value = null
+}
+
 // Lista de usuarios
 const usuarios = ref<any[]>([])
 const search = ref('')
@@ -94,13 +141,24 @@ const filteredUsers = computed(() =>
   )
 )
 
-function editUser(user: any) {
-  console.log('Editar usuario:', user)
+async function handleDeleteUser(id: number) {
+  try {
+    await eliminarUsuario(id)
+    usuarios.value = usuarios.value.filter(u => u.id !== id)
+    snackbar.value = {
+      show: true,
+      message: 'Usuario eliminado correctamente',
+      color: 'success',
+    }
+  } catch (error: any) {
+    snackbar.value = {
+      show: true,
+      message: error.message || 'Error al eliminar usuario',
+      color: 'error',
+    }
+  }
 }
 
-function handleDeleteUser(id: number) {
-  console.log('Eliminar usuario con ID:', id)
-}
 </script>
 
 
@@ -159,16 +217,10 @@ function handleDeleteUser(id: number) {
             </v-col>
 
             <v-col cols="12" md="6">
-              <v-text-field
-                label="Contraseña"
-                v-model="password"
-                type="password"
-                required
-                minlength="6"
-                outlined
-              />
+              <v-text-field label="Contraseña" v-model="password" type="password" required minlength="6" outlined />
             </v-col>
           </v-row>
+          <v-btn v-if="isEditing" color="secondary" @click="cancelEdit">Cancelar</v-btn>
           <v-btn color="primary" type="submit">Guardar</v-btn>
         </v-form>
       </v-card-text>
@@ -177,22 +229,10 @@ function handleDeleteUser(id: number) {
     <v-card outlined>
       <v-card-title class="text-h6">Lista de Usuarios</v-card-title>
 
-      <v-text-field
-        v-model="search"
-        label="Buscar usuario"
-        prepend-inner-icon="mdi-magnify"
-        class="mb-4"
-        outlined
-      />
+      <v-text-field v-model="search" label="Buscar usuario" prepend-inner-icon="mdi-magnify" class="mb-4" outlined />
 
-      <v-data-table
-        :headers="headers"
-        :items="filteredUsers"
-        item-value="id"
-        v-model:sort-by="sortBy"
-        v-model:sort-desc="sortDesc"
-        class="elevation-1"
-      >
+      <v-data-table :headers="headers" :items="filteredUsers" item-value="id" v-model:sort-by="sortBy"
+        v-model:sort-desc="sortDesc" class="elevation-1">
         <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template v-slot:item.actions="{ item }">
           <v-menu>
@@ -205,6 +245,7 @@ function handleDeleteUser(id: number) {
               <v-list-item @click="editUser(item)">
                 <v-list-item-title>Actualizar</v-list-item-title>
               </v-list-item>
+
               <v-list-item @click="item.id !== undefined && handleDeleteUser(item.id)">
                 <v-list-item-title>Eliminar</v-list-item-title>
               </v-list-item>
@@ -222,6 +263,3 @@ function handleDeleteUser(id: number) {
     </v-snackbar>
   </v-container>
 </template>
-
-
-
