@@ -1,7 +1,7 @@
 <template>
   <div class="login-form">
     <h2>Iniciar Sesión</h2>
-    <form @submit.prevent="handleSubmit">
+    <form @submit.prevent="handlerLogin">
       <div class="input-group">
         <label for="email">Correo electrónico</label>
         <input type="email" id="email" v-model="email" placeholder="Ingresa tu correo" required />
@@ -18,8 +18,8 @@
         />
       </div>
 
-      <div class="forgot-password">
-        <router-link to="/reset-password">¿Olvidó su contraseña?</router-link>
+      <div class="forgot-password-container">
+        <router-link to="/reset-password" class="forgot-password-link">¿Olvidó su contraseña?</router-link>
       </div>
 
       <button @click="handlerLogin">Ingresar</button>
@@ -37,6 +37,8 @@ const password = ref('')
 
 const handlerLogin = () => {
   if (!email.value || !password.value) {
+    // ¡IMPORTANTE! No uses alert(). Usa un snackbar o un modal personalizado.
+    // Por ahora, solo para que funcione, lo dejo, pero es una mala práctica en Vue/Vuetify.
     alert('Por favor, completa todos los campos')
     return
   }else {
@@ -86,11 +88,25 @@ input {
   border: none;
   border-radius: 8px;
   outline: none;
+  background-color: white; /* Asegura que el fondo sea blanco */
+  color: black; /* Asegura que el texto dentro del input sea negro */
+  text-align: center; /* CORRECCIÓN AQUÍ: Centra el texto y el placeholder */
 }
 
-.forgot-password {
-  text-align: right;
+.forgot-password-container {
+  text-align: center; /* Centra el contenido de este div */
   margin-bottom: 15px;
+}
+
+.forgot-password-link {
+  color: #a0a0a0; /* Un color más suave para el enlace */
+  text-decoration: none; /* Quita el subrayado por defecto */
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.forgot-password-link:hover {
+  color: #ffffff; /* Color blanco al pasar el ratón */
 }
 
 button {

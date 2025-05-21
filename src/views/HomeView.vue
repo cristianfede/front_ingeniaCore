@@ -1,155 +1,76 @@
 <template>
-  <div class="home-container">
-    <!-- Barra de navegación -->
-    <header class="navbar">
-      <div class="logo">IngeniaCore</div>
+  <div class="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-gray-50 text-gray-800 font-inter">
+    <header class="w-full bg-blue-700 bg-opacity-90 shadow-lg p-4 flex justify-between items-center fixed top-0 z-10">
+      <div class="text-3xl font-extrabold text-white tracking-wide">IngeniaCore</div>
       <nav>
-        <router-link to="/login">Iniciar sesión</router-link>
-        <router-link to="/register">Registrarse</router-link>
+        <router-link
+          to="/login"
+          class="px-6 py-2 rounded-lg bg-white text-blue-700 font-semibold transition-colors duration-300 shadow-md hover:bg-gray-100"
+        >
+          Iniciar sesión
+        </router-link>
       </nav>
     </header>
 
-    <!-- Sección principal -->
-    <section class="main-section">
-      <div class="main-content">
-        <h1>Gestiona tus proyectos de forma más eficiente</h1>
-        <p>Optimiza tus tareas y colabora en tiempo real con nuestro software.</p>
-        <div class="cta-buttons">
+    <section class="flex-grow flex items-center justify-center text-center p-8 mt-16">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-6xl font-extrabold mb-6 leading-tight animate-fade-in-up text-blue-800">
+          Bienvenido a tu Centro de Soporte IngeniaCore
+        </h1>
+        <p class="text-xl text-gray-700 mb-10 animate-fade-in-up delay-200">
+          Tu solución integral para gestionar solicitudes y optimizar la atención al cliente.
+          Accede con tus credenciales proporcionadas para empezar.
+        </p>
+        <div class="animate-fade-in-up delay-400">
           <router-link to="/login">
-            <button class="btn">Iniciar sesión</button>
-          </router-link>
-          <router-link to="/register">
-            <button class="btn primary">Crear cuenta</button>
+            <button
+             style="background-color:aquamarine !important; color:black !important"
+            class="px-10 py-4 rounded-full bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white font-bold text-lg shadow-xl transform hover:scale-105 transition-all duration-300"
+            >
+              Acceder al Sistema
+            </button>
           </router-link>
         </div>
       </div>
     </section>
 
-    <footer class="footer">
-      <p>© 2025 Mi Aplicación. Todos los derechos reservados.</p>
+    <footer class="w-full bg-blue-700 bg-opacity-90 text-gray-200 text-center p-4">
+      <p>&copy; 2025 IngeniaCore. Todos los derechos reservados.</p>
     </footer>
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+// No se necesita lógica de script para esta vista simple
+</script>
 
 <style scoped>
-body {
-  font-family: 'roboto';
-  padding: 0;
-  margin: 0;
-  width: 100%;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background-color: #0078d4;
-  justify-content: center;
-  align-items: center;
-  overflow-x: hidden;
+/* Importa la fuente Inter */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+
+.font-inter {
+  font-family: 'Inter', sans-serif;
 }
 
-.home-container {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
+/* Animaciones */
+@keyframes fadeInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  padding: 15px;
-  background-color: #2d2d2d;
-  color: white;
-  width: 100%;
-  position: absolute;
-  top: 0;
-  padding: 0;
-  margin: 0;
+
+
+.delay-200 {
+  animation-delay: 0.2s;
 }
 
-.navbar .logo {
-  color: white;
-  font-size: 24px;
-  font-weight: bold;
-}
-
-.navbar nav a {
-  color: white;
-  text-decoration: none;
-  margin-left: 20px;
-  font-size: 16px;
-}
-
-/* Sección principal */
-.main-section {
-  display: flex;
-  justify-content: center;
-  align-items: center; /* Centra el contenido verticalmente */
-  background: no-repeat center center;
-  background-size: cover;
-  width: 100%;
-  min-height: 70vh;
-  color: black;
-  text-align: center;
-  padding: 0 20px;
-  box-sizing: border-box;
-}
-
-.main-content {
-  max-width: 1000px; /* Asegura que el contenido no exceda este ancho */
-  width: 100%;
-  padding: 20px;
-  box-sizing: border-box;
-}
-
-.main-content h1 {
-  font-size: 36px;
-  margin-bottom: 20px;
-}
-
-.main-content p {
-  font-size: 18px;
-  margin-bottom: 30px;
-}
-
-.cta-buttons {
-  display: flex;
-  justify-content: center; /* Centra los botones */
-  gap: 20px; /* Espacio entre los botones */
-}
-
-.cta-buttons .btn {
-  padding: 15px 30px;
-  margin: 10px;
-  font-size: 16px;
-  cursor: pointer;
-  border: none;
-  border-radius: 5px;
-  transition: background-color 0.3s ease;
-}
-
-.cta-buttons .btn.primary {
-  background-color: #0078d4;
-  color: white;
-}
-
-.cta-buttons .btn:hover {
-  opacity: 0.8;
-}
-
-/* Pie de página */
-.footer {
-  background-color: #f1f1f1;
-  text-align: center;
-  padding: 10px;
-  width: 100%;
-  position: absolute;
-  bottom: 0;
-  box-sizing: border-box;
+.delay-400 {
+  animation-delay: 0.4s;
 }
 </style>
