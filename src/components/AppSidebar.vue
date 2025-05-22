@@ -1,33 +1,72 @@
 <template>
-  <div class="sidebar">
-    <ul>
-      <li><router-link to="/dashboard">Dashboard</router-link></li>
-      <li><router-link to="/settings">Settings</router-link></li>
-      <li><router-link to="/profile">Profile</router-link></li>
-      <li><router-link to="/crud">Usuarios</router-link></li>
-      <li><router-link to="/tickets">Tickets</router-link></li>
-      <li><router-link to="/formulario-empresas">Empresas</router-link></li> </ul>
-  </div>
+  <v-navigation-drawer
+    expand-on-hover
+    rail
+    app
+    permanent
+    color="#90CAF9"
+    style="margin-top: 64px;"
+  >
+    <!-- Perfil de usuario -->
+    <v-list>
+      <v-list-item
+        prepend-avatar="https://randomuser.me/api/portraits/women/85.jpg"
+        subtitle="danna@gmail.com"
+        title="Danna Gomez"
+      />
+    </v-list>
+
+    <v-divider></v-divider>
+
+    <!-- Navegación con tus rutas -->
+    <v-list density="compact" nav>
+      <v-list-item
+        prepend-icon="mdi-view-dashboard"
+        title="Dashboard"
+        :to="{ path: '/dashboard' }"
+        link
+      />
+      <v-list-item
+        prepend-icon="mdi-cog"
+        title="Settings"
+        :to="{ path: '/settings' }"
+        link
+      />
+      <v-list-item
+        prepend-icon="mdi-account"
+        title="Profile"
+        :to="{ path: '/profile' }"
+        link
+      />
+      <v-list-item
+        prepend-icon="mdi-table"
+        title="Usuarios"
+        :to="{ path: '/crud' }"
+        link
+      />
+      <v-list-item
+        prepend-icon="mdi-ticket"
+        title="Tickets"
+        :to="{ path: '/tickets' }"
+        link
+      />
+      <v-list-item
+        prepend-icon="mdi-domain"
+        title="Empresas"
+        :to="{ path: '/formulario-empresas' }"
+        link
+      />
+    </v-list>
+  </v-navigation-drawer>
 </template>
 
+<script setup lang="ts">
+// No necesitas lógica adicional aquí por ahora
+</script>
+
 <style scoped>
-.sidebar {
-  width: 250px;
-  min-height: 100vh; /* se asegura que cubra mínimo el alto de pantalla */
-  height: 100%; /* crecerá si el contenido es más largo */
-  background: #2367aa;
+.v-navigation-drawer {
   color: white;
-  padding: 20px;
-  position: sticky; /* se queda visible si hacés scroll */
-  top: 0;
-}
-
-ul {
-  list-style: none;
-  padding: 0;
-}
-
-li {
-  margin: 10px 0;
+  z-index: 1000;
 }
 </style>
