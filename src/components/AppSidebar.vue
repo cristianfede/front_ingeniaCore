@@ -40,8 +40,20 @@
       />
       <v-list-item
         prepend-icon="mdi-table"
-        title="Crud"
+        title="Usuarios"
         :to="{ path: '/crud' }"
+        link
+      />
+      <v-list-item
+        prepend-icon="mdi-ticket"
+        title="Tickets"
+        :to="{ path: '/tickets' }"
+        link
+      />
+      <v-list-item
+        prepend-icon="mdi-domain"
+        title="Empresas"
+        :to="{ path: '/formulario-empresas' }"
         link
       />
     </v-list>
@@ -53,9 +65,8 @@
 </script>
 
 <style scoped>
-/* Si deseas mantener colores personalizados adicionales */
 .v-navigation-drawer {
   color: white;
-  z-index: 1000; /* Opcional, asegura que quede por encima */
+  z-index: 1000;
 }
 </style>

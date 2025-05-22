@@ -9,7 +9,10 @@ import DashboardView from '@/views/dashboard/DashboardView.vue'
 import SettingsView from '@/views/dashboard/SettingsView.vue'
 import ProfileView from '@/views/dashboard/ProfileView.vue'
 import HomeView from '@/views/HomeView.vue'
-import CrudView from '@/views/CrudView.vue'
+import FormularioUsuarios from '@/views/FormularioUsuarios.vue'
+import TicketsView from '../views/TicketsView.vue' 
+// import GestionClientes from '../views/FormularioEmpresasView.vue' // ¡ELIMINADA ESTA IMPORTACIÓN DUPLICADA!
+import FormularioEmpresasView from '../views/FormularioEmpresasView.vue' // Mantenemos esta, que es la que se usa en la ruta
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -56,8 +59,21 @@ const router = createRouter({
     },
     {
       path: '/crud',
-      component: CrudView,
+      component: FormularioUsuarios,
       meta: { layout: 'MainLayout' },
+    },
+
+    {
+      path: '/tickets', // <-- Nueva ruta
+      name: 'tickets',
+      component: TicketsView,
+      meta: { layout: 'MainLayout' }, // <--- ¡AÑADIDO ESTO!
+    },
+    {
+      path: '/formulario-empresas', // ¡RUTA Y NOMBRE ACTUALIZADOS!
+      name: 'FormularioEmpresas',
+      component: FormularioEmpresasView, // Usamos el nombre de importación directo
+      meta: { layout: 'MainLayout', requiresAuth: true, userType: 'interno' }, // Protegida y solo para internos
     },
 
     { path: '/new-password', component: NewPasswordView, meta: { layout: 'AuthLayout' } },
