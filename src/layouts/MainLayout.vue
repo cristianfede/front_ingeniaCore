@@ -1,35 +1,18 @@
 <template>
-  <div class="dashboard-layout">
+  <v-app>
     <AppSidebar />
-    <div class="main-content">
+
+    <v-layout>
       <AppNavbar />
-      <div class="page-content">
+
+    </v-layout>
+      <v-main class="pa-15" style="background: #fff;">
         <router-view />
-      </div>
-    </div>
-  </div>
+      </v-main>
+  </v-app>
 </template>
 
 <script setup lang="ts">
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppNavbar from '@/components/AppNavbar.vue'
 </script>
-
-<style scoped>
-.dashboard-layout {
-  display: flex;
-  min-height: 100vh;
-}
-
-.main-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.page-content {
-  flex: 1;
-  padding: 20px;
-  background: #fff;
-}
-</style>
