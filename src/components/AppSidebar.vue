@@ -7,12 +7,12 @@
     color="#90CAF9"
     style="margin-top: 64px;"
   >
-    <!-- Perfil de usuario -->
+     <!-- Perfil de usuario -->
     <v-list>
       <v-list-item
         prepend-avatar="https://randomuser.me/api/portraits/women/85.jpg"
-        subtitle="danna@gmail.com"
-        title="Danna Gomez"
+        :subtitle="auth.user?.correo"
+        :title="auth.user?.nombre"
       />
     </v-list>
 
@@ -61,7 +61,8 @@
 </template>
 
 <script setup lang="ts">
-// No necesitas lógica adicional aquí por ahora
+import { authSetStore } from '@/stores/AuthStore'
+const auth = authSetStore()
 </script>
 
 <style scoped>
