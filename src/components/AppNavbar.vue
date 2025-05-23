@@ -10,7 +10,6 @@
     <v-toolbar-title>
       Bienvenido, {{ authStore.user?.nombre || 'Usuario' }}
     </v-toolbar-title>
-    
 
     <v-spacer></v-spacer>
 
@@ -46,9 +45,10 @@ const handleLogout = async () => {
 <style scoped>
 .v-toolbar {
   position: fixed;
-}/* No necesitas mucho estilo aquí porque Vuetify lo maneja */
+} /* No necesitas mucho estilo aquí porque Vuetify lo maneja */
 
 .v-toolbar-items {
-  position:fixed, right,
+  position: fixed;
+  right: 0;
 }
 </style>
