@@ -125,7 +125,9 @@ const headers = [
   { title: 'NIT', key: 'nit', sortable: false },
   { title: 'Correo', key: 'correo', sortable: false },
   { title: 'Telefono', key: 'telefono', sortable: false },
+  { title: 'Proyectos', key: 'proyectos', sortable: false },
   { title: 'Acciones', key: 'actions', sortable: false },
+
 ];
 
 const sortByIdAsc = () => {
