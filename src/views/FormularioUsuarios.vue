@@ -97,6 +97,7 @@ async function handleConfirmAction() {
       if (userToDeleteId.value !== null) {
         await eliminarUsuario(userToDeleteId.value);
         usuarios.value = usuarios.value.filter(u => u.id !== userToDeleteId.value);
+         await cargarUsuarios();
         snackbar.value = { show: true, message: 'Usuario eliminado correctamente.', color: 'success' };
       }
     }
