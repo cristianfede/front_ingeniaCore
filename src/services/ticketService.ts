@@ -1,7 +1,8 @@
 // src/services/ticketService.ts
 
 // Define la URL base de tu API
-const API_BASE_URL = 'http://localhost:3333' // URL base original (sin /api)
+// Es crucial que esta URL coincida con el prefijo de tus rutas en AdonisJS (generalmente /api)
+const API_BASE_URL = 'http://localhost:3333/api';
 
 // Interfaz para los datos de un ticket (al crear o actualizar)
 interface TicketData {
@@ -9,11 +10,13 @@ interface TicketData {
   descripcion: string;
   estado_id: number | null;
   prioridad_id: number | null;
-  cliente_id: number | null;
-  usuario_asignado_id: number | null;
+  cliente_id: number | null; // Este será el ID de la Empresa
+  usuario_asignado_id: number | null; // Este será el ID del Técnico
   categoria_id: number | null;
   servicio_id: number | null;
-  // fecha_asignacion: string; // Si esta columna no existe en tu DB, puedes quitarla o hacerla opcional
+  // Si 'fecha_asignacion' es parte de tu DB y la quieres manejar, agrégala aquí.
+  // Por ahora la dejamos comentada como en tu original.
+  // fecha_asignacion: string;
 }
 
 /**
@@ -27,17 +30,17 @@ export async function crearTicket(ticketData: FormData) {
       method: 'POST',
       body: ticketData, // Envía FormData directamente
       // No se establece 'Content-Type' aquí, el navegador lo hace automáticamente para FormData
-    })
+    });
 
     if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.mensaje || 'Error al crear ticket')
+      const errorData = await response.json();
+      throw new Error(errorData.mensaje || 'Error al crear ticket');
     }
 
-    return await response.json()
+    return await response.json();
   } catch (error) {
-    console.error('Error en ticketService (crearTicket):', error)
-    throw error
+    console.error('Error en ticketService (crearTicket):', error);
+    throw error;
   }
 }
 
@@ -47,17 +50,17 @@ export async function crearTicket(ticketData: FormData) {
  */
 export async function obtenerTickets() {
   try {
-    const response = await fetch(`${API_BASE_URL}/tickets`)
+    const response = await fetch(`${API_BASE_URL}/tickets`);
 
     if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.mensaje || 'Error al obtener tickets')
+      const errorData = await response.json();
+      throw new Error(errorData.mensaje || 'Error al obtener tickets');
     }
 
-    return await response.json()
+    return await response.json();
   } catch (error) {
-    console.error('Error en ticketService (obtenerTickets):', error)
-    throw error
+    console.error('Error en ticketService (obtenerTickets):', error);
+    throw error;
   }
 }
 
@@ -73,17 +76,17 @@ export async function actualizarTicket(id: number, ticketData: FormData) {
     const response = await fetch(`${API_BASE_URL}/tickets/${id}?_method=PUT`, {
       method: 'POST', // Método POST para enviar FormData con _method=PUT
       body: ticketData,
-    })
+    });
 
     if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.mensaje || 'Error al actualizar ticket')
+      const errorData = await response.json();
+      throw new Error(errorData.mensaje || 'Error al actualizar ticket');
     }
 
-    return await response.json()
+    return await response.json();
   } catch (error) {
-    console.error('Error en ticketService (actualizarTicket):', error)
-    throw error
+    console.error('Error en ticketService (actualizarTicket):', error);
+    throw error;
   }
 }
 
@@ -96,32 +99,33 @@ export async function eliminarTicket(id: number) {
   try {
     const response = await fetch(`${API_BASE_URL}/tickets/${id}`, {
       method: 'DELETE',
-    })
+    });
 
     if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.mensaje || 'Error al eliminar ticket')
+      const errorData = await response.json();
+      throw new Error(errorData.mensaje || 'Error al eliminar ticket');
     }
 
     return response.status === 204 ? {} : await response.json();
   } catch (error) {
-    console.error('Error en ticketService (eliminarTicket):', error)
-    throw error
+    console.error('Error en ticketService (eliminarTicket):', error);
+    throw error;
   }
 }
 
-// --- Servicios adicionales para las listas de referencia (ejemplos) ---
-// Asumo que estos endpoints existen y devuelven un array de objetos { id: number; nombre: string }
+// --- Servicios adicionales para las listas de referencia ---
+// Asumo que estos endpoints existen y devuelven un array de objetos con 'id' y 'nombre' (o 'nombre' y 'apellido' para usuarios)
 
 /**
- * Obtiene la lista de estados de tickets.
+ * Obtiene la lista de estados de tickets desde la tabla 'estado_tickets'.
  */
 export async function obtenerEstados() {
   try {
-    const response = await fetch(`${API_BASE_URL}/estados`); // URL original sin /api
+    // Endpoint para la tabla estado_tickets
+    const response = await fetch(`${API_BASE_URL}/estado_tickets`);
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.mensaje || 'Error al obtener estados');
+      throw new Error(errorData.mensaje || 'Error al obtener estados de tickets');
     }
     return await response.json();
   } catch (error) {
@@ -131,86 +135,95 @@ export async function obtenerEstados() {
 }
 
 /**
- * Obtiene la lista de prioridades de tickets.
+ * Obtiene la lista de prioridades de tickets desde la tabla 'prioridades'.
  */
 export async function obtenerPrioridades() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/prioridades`); // URL original sin /api
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.mensaje || 'Error al obtener prioridades');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error en ticketService (obtenerPrioridades):', error);
-        throw error;
+  try {
+    // Endpoint para la tabla prioridades
+    const response = await fetch(`${API_BASE_URL}/prioridades`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.mensaje || 'Error al obtener prioridades');
     }
+    return await response.json();
+  } catch (error) {
+    console.error('Error en ticketService (obtenerPrioridades):', error);
+    throw error;
+  }
 }
 
 /**
- * Obtiene la lista de clientes.
+ * Obtiene la lista de EMPRESAS desde la tabla 'empresas'.
  */
-export async function obtenerClientes() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/clientes`); // URL original sin /api
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.mensaje || 'Error al obtener clientes');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error en ticketService (obtenerClientes):', error);
-        throw error;
+export async function obtenerEmpresas() {
+  try {
+    // Endpoint para la tabla empresas
+    const response = await fetch(`${API_BASE_URL}/empresas`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.mensaje || 'Error al obtener empresas');
     }
+    return await response.json();
+  } catch (error) {
+    console.error('Error en ticketService (obtenerEmpresas):', error);
+    throw error;
+  }
 }
 
 /**
- * Obtiene la lista de usuarios (para asignar tickets).
+ * Obtiene la lista de USUARIOS (para asignar tickets).
+ * Si necesitas filtrar por rol (ej. 'tecnico'), esto se haría en el backend
+ * en el controlador de usuarios o en una ruta específica como '/usuarios/tecnicos'.
+ * Por ahora, apunta a la tabla 'usuarios' general.
  */
 export async function obtenerUsuariosAsignables() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/usuarios_asignables`); // URL original sin /api
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.mensaje || 'Error al obtener usuarios asignables');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error en ticketService (obtenerUsuariosAsignables):', error);
-        throw error;
+  try {
+    // Endpoint para la tabla usuarios.
+    // Si tienes una ruta específica para técnicos, cámbiala aquí (ej. /usuarios/tecnicos)
+    const response = await fetch(`${API_BASE_URL}/usuarios`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.mensaje || 'Error al obtener usuarios asignables');
     }
+    return await response.json();
+  } catch (error) {
+    console.error('Error en ticketService (obtenerUsuariosAsignables):', error);
+    throw error;
+  }
 }
 
 /**
- * Obtiene la lista de categorías de tickets.
+ * Obtiene la lista de categorías de tickets desde la tabla 'categorias'.
  */
 export async function obtenerCategorias() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/categorias`); // URL original sin /api
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.mensaje || 'Error al obtener categorías');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error en ticketService (obtenerCategorias):', error);
-        throw error;
+  try {
+    // Endpoint para la tabla categorias
+    const response = await fetch(`${API_BASE_URL}/categorias`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.mensaje || 'Error al obtener categorías');
     }
+    return await response.json();
+  } catch (error) {
+    console.error('Error en ticketService (obtenerCategorias):', error);
+    throw error;
+  }
 }
 
 /**
- * Obtiene la lista de servicios.
+ * Obtiene la lista de servicios desde la tabla 'servicios'.
  */
 export async function obtenerServicios() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/servicios`); // URL original sin /api
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.mensaje || 'Error al obtener servicios');
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('Error en ticketService (obtenerServicios):', error);
-        throw error;
+  try {
+    // Endpoint para la tabla servicios
+    const response = await fetch(`${API_BASE_URL}/servicios`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.mensaje || 'Error al obtener servicios');
     }
+    return await response.json();
+  } catch (error) {
+    console.error('Error en ticketService (obtenerServicios):', error);
+    throw error;
+  }
 }

@@ -7,7 +7,8 @@ import {
   eliminarTicket,
   obtenerEstados,
   obtenerPrioridades,
-  obtenerClientes,
+  // CAMBIO AQUÍ: Importa obtenerEmpresas en lugar de obtenerClientes
+  obtenerEmpresas,
   obtenerUsuariosAsignables,
   obtenerCategorias,
   obtenerServicios
@@ -19,8 +20,8 @@ const titulo = ref('');
 const descripcion = ref('');
 const estado_id = ref<number | null>(null);
 const prioridad_id = ref<number | null>(null);
-const cliente_id = ref<number | null>(null);
-const usuario_asignado_id = ref<number | null>(null);
+const cliente_id = ref<number | null>(null); // Este ahora será el ID de la Empresa
+const usuario_asignado_id = ref<number | null>(null); // Este será el ID del Técnico
 const categoria_id = ref<number | null>(null);
 const servicio_id = ref<number | null>(null);
 
@@ -38,8 +39,9 @@ const editingTicketId = ref<number | null>(null);
 // --- Listas para los v-select (cargadas desde la API) ---
 const estados = ref<{ id: number; nombre: string }[]>([]);
 const prioridades = ref<{ id: number; nombre: string }[]>([]);
-// Tipado para clientes y usuariosAsignados para incluir 'apellido'
-const clientes = ref<{ id: number; nombre: string; apellido: string }[]>([]);
+// CAMBIO AQUÍ: Tipado para 'clientes' ahora representa 'empresas' (asumiendo id y nombre)
+const clientes = ref<{ id: number; nombre: string }[]>([]);
+// Tipado para usuariosAsignados para incluir 'apellido'
 const usuariosAsignados = ref<{ id: number; nombre: string; apellido: string }[]>([]);
 const categorias = ref<{ id: number; nombre: string }[]>([]);
 const servicios = ref<{ id: number; nombre: string }[]>([]);
@@ -65,8 +67,8 @@ function editTicket(ticket: any) {
   estado_id.value = ticket.estado_id;
   prioridad_id.value = ticket.prioridad_id;
   // Asigna los IDs de las relaciones, usando ?.id para seguridad si la relación es nula
-  cliente_id.value = ticket.cliente?.id || null;
-  usuario_asignado_id.value = ticket.usuario_asignado?.id || null;
+  cliente_id.value = ticket.cliente?.id || null; // Ahora 'cliente' se refiere a la empresa
+  usuario_asignado_id.value = ticket.usuario_asignado?.id || null; // 'usuario_asignado' se refiere al técnico
   categoria_id.value = ticket.categoria?.id || null;
   servicio_id.value = ticket.servicio?.id || null;
   archivoAdjunto.value = null;
@@ -184,7 +186,8 @@ const sortDesc = ref(false);
 const headers = [
   { title: 'ID', key: 'id', sortable: false },
   { title: 'Asunto', key: 'titulo', sortable: false },
-  { title: 'Cliente', key: 'cliente.nombre', sortable: false },
+  // CAMBIO AQUÍ: Cambiado 'Cliente' a 'Empresa' para la cabecera de la tabla
+  { title: 'Empresa', key: 'cliente.nombre', sortable: false },
   { title: 'Prioridad', key: 'prioridad.nombre', sortable: false },
   { title: 'Estado', key: 'estado.nombre', sortable: false },
   { title: 'Técnico', key: 'usuario_asignado.nombre', sortable: false },
@@ -221,7 +224,8 @@ async function cargarListasReferencia() {
   try {
     estados.value = await obtenerEstados();
     prioridades.value = await obtenerPrioridades();
-    clientes.value = await obtenerClientes();
+    // CAMBIO AQUÍ: Llamada a obtenerEmpresas en lugar de obtenerClientes
+    clientes.value = await obtenerEmpresas();
     usuariosAsignados.value = await obtenerUsuariosAsignables();
     categorias.value = await obtenerCategorias();
     servicios.value = await obtenerServicios();
@@ -235,7 +239,7 @@ const filteredTickets = computed(() =>
   tickets.value.filter((t) =>
     String(t.id).toLowerCase().includes(search.value.toLowerCase()) ||
     t.titulo.toLowerCase().includes(search.value.toLowerCase()) ||
-    (t.cliente?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) ||
+    (t.cliente?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) || // Filtrado por nombre de empresa
     (t.prioridad?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) ||
     (t.estado?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) ||
     (t.usuario_asignado?.nombre || '').toLowerCase().includes(search.value.toLowerCase())
@@ -330,7 +334,7 @@ function clearSelectedFile() {
                 class="mb-3"
               ></v-select>
               <v-autocomplete
-                label="Cliente Asociado"
+                label="Empresa Asociada"
                 v-model="cliente_id"
                 :items="clientes"
                 item-value="id"
@@ -339,13 +343,13 @@ function clearSelectedFile() {
                 density="compact"
                 hide-no-data
                 hide-selected
-                placeholder="Escribe para buscar o seleccionar"
+                placeholder="Escribe para buscar o seleccionar la empresa"
               >
                 <template v-slot:item="{ item }">
-                  <v-list-item-title>{{ item.raw.nombre }} {{ item.raw.apellido }}</v-list-item-title>
+                  <v-list-item-title>{{ item.raw.nombre }}</v-list-item-title>
                 </template>
                 <template v-slot:selection="{ item }">
-                  {{ item.raw.nombre }} {{ item.raw.apellido }}
+                  {{ item.raw.nombre }}
                 </template>
               </v-autocomplete>
             </v-col>
@@ -362,7 +366,7 @@ function clearSelectedFile() {
                 class="mb-3"
                 hide-no-data
                 hide-selected
-                placeholder="Escribe para buscar o seleccionar"
+                placeholder="Escribe para buscar o seleccionar al técnico"
               >
                 <template v-slot:item="{ item }">
                   <v-list-item-title>{{ item.raw.nombre }} {{ item.raw.apellido }}</v-list-item-title>
@@ -504,3 +508,10 @@ function clearSelectedFile() {
     />
   </v-container>
 </template>
+
+<style scoped>
+/* Estilos adicionales si son necesarios, pero Vuetify y Tailwind CSS deberían manejar la mayoría */
+.form {
+  padding: 1rem;
+}
+</style>
