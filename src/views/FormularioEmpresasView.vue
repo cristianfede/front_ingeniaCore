@@ -168,6 +168,8 @@ function editEmpresa(empresa: any) {
   nit.value = empresa.nit;
   correo.value = empresa.correo;
   telefono.value = empresa.telefono;
+
+  window.scrollTo({ top: 0, behavior: 'smooth'})
 }
 
 async function submit() {

@@ -34,6 +34,8 @@ function editUser(user: any) {
   telefono.value = user.telefono
   correo.value = user.correo
   password.value = '' // No precargamos la contraseña por seguridad
+
+  window.scrollTo({ top: 0, behavior: 'smooth'})
 }
 
 async function submit() {
@@ -132,16 +134,16 @@ type MySortItem = {
   order: boolean | 'asc' | 'desc' | undefined
 }
 
-const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }]); 
+const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }]);
 
-const sortDesc = ref(false) 
+const sortDesc = ref(false)
 
 const headers = [
-  { title: 'ID', key: 'id', sortable: false }, 
-  { title: 'Nombre', key: 'nombre', sortable: false }, 
-  { title: 'Apellido', key: 'apellido', sortable: false }, 
-  { title: 'Correo', key: 'correo', sortable: false }, 
-  { title: 'Teléfono', key: 'telefono', sortable: false }, 
+  { title: 'ID', key: 'id', sortable: false },
+  { title: 'Nombre', key: 'nombre', sortable: false },
+  { title: 'Apellido', key: 'apellido', sortable: false },
+  { title: 'Correo', key: 'correo', sortable: false },
+  { title: 'Teléfono', key: 'telefono', sortable: false },
   { title: 'Acciones', key: 'actions', sortable: false },
 ]
 
@@ -155,7 +157,7 @@ const sortByIdDesc = () => {
 
 onMounted(async () => {
   await cargarUsuarios();
-  sortByIdAsc(); 
+  sortByIdAsc();
 })
 
 async function cargarUsuarios() {
@@ -208,9 +210,9 @@ function handleCancelAction() {
           </v-row>
           <div class="d-flex justify-start">
             <v-btn v-if="isEditing" color="secondary" @click="resetForm" class="mr-2">Cancelar</v-btn>
-            
+
             <v-btn v-if="!isEditing" color="grey" text @click="resetForm" class="mr-2">Limpiar</v-btn>
-            
+
             <v-btn color="primary" type="submit">Guardar</v-btn>
           </div>
         </v-form>
@@ -221,11 +223,11 @@ function handleCancelAction() {
       <v-card-title class="text-h6">
           Lista de Usuarios
       </v-card-title>
-      
+
       <v-row align="center" class="px-4 pb-4">
         <v-col cols="12" sm="6" md="5" lg="4"> <v-text-field v-model="search" label="Buscar usuario" prepend-inner-icon="mdi-magnify" outlined dense hide-details />
         </v-col>
-        
+
         <v-col cols="12" sm="6" md="7" lg="8" class="d-flex justify-start"> <v-btn small @click="sortByIdAsc" class="mr-2" color="#1976D2" dark>
             <v-icon left>mdi-sort-ascending</v-icon> Más Antiguos
           </v-btn>
