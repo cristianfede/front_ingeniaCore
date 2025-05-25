@@ -63,6 +63,12 @@
         :to="{ path: '/proyectos' }"
         link
       />
+      <v-list-item
+        prepend-icon="mdi-domain"
+        title="Roles"
+        :to="{ path: '/Roles' }"
+        link
+      />
     </v-list>
   </v-navigation-drawer>
 </template>

@@ -14,6 +14,7 @@ import TicketsView from '../views/TicketsView.vue'
 // import GestionClientes from '../views/FormularioEmpresasView.vue' // ¡ELIMINADA ESTA IMPORTACIÓN DUPLICADA!
 import FormularioEmpresasView from '../views/FormularioEmpresasView.vue' // Mantenemos esta, que es la que se usa en la ruta
 import FormulariosProyectos from '@/views/FormulariosProyectos.vue'
+import FormularioRoles from "@/views/FormularioRolesView.vue"
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -80,6 +81,12 @@ const router = createRouter({
       path: '/proyectos',
       name: 'FormulariosProyectos',
       component: FormulariosProyectos,
+      meta: { layout: 'MainLayout' },
+    },
+     {
+      path: '/Roles',
+      name: 'FormularioRoles',
+      component: FormularioRoles,
       meta: { layout: 'MainLayout' },
     },
     { path: '/new-password', component: NewPasswordView, meta: { layout: 'AuthLayout' } },
