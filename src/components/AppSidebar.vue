@@ -57,6 +57,12 @@
         :to="{ path: '/formulario-empresas' }"
         link
       />
+      <v-list-item
+        prepend-icon="mdi-domain"
+        title="Proyectos"
+        :to="{ path: '/proyectos' }"
+        link
+      />
     </v-list>
   </v-navigation-drawer>
 </template>

@@ -14,6 +14,9 @@
             <v-col cols="12" md="6">
               <v-text-field label="Correo de Contacto" v-model="correo" type="email" required outlined />
             </v-col>
+            <v-col cols="12" md="6">
+              <v-text-field label="telefono" v-model="telefono" type="telefono" required outlined />
+            </v-col>
           </v-row>
           <div class="d-flex justify-start">
             <v-btn v-if="isEditing" color="secondary" @click="resetForm" class="mr-2">Cancelar</v-btn>
@@ -86,6 +89,7 @@ import ConfirmDialog from '../components/Confirmardialogo.vue'; // Asegúrate de
 const nombre = ref('');
 const nit = ref('');
 const correo = ref('');
+const telefono = ref('');
 
 const snackbar = ref({
   show: false,
@@ -120,7 +124,10 @@ const headers = [
   { title: 'Nombre', key: 'nombre', sortable: false },
   { title: 'NIT', key: 'nit', sortable: false },
   { title: 'Correo', key: 'correo', sortable: false },
+  { title: 'Telefono', key: 'telefono', sortable: false },
+  { title: 'Proyectos', key: 'proyectos', sortable: false },
   { title: 'Acciones', key: 'actions', sortable: false },
+
 ];
 
 const sortByIdAsc = () => {
@@ -160,11 +167,12 @@ function editEmpresa(empresa: any) {
   nombre.value = empresa.nombre;
   nit.value = empresa.nit;
   correo.value = empresa.correo;
+  telefono.value = empresa.telefono;
 }
 
 async function submit() {
   // Validación básica del formulario
-  if (!nombre.value || !nit.value || !correo.value) {
+  if (!nombre.value || !nit.value || !correo.value || !telefono.value) {
     snackbar.value = {
       show: true,
       message: 'Por favor, completa todos los campos requeridos.',
@@ -198,6 +206,7 @@ async function handleConfirmAction() {
       nombre: nombre.value,
       nit: nit.value,
       correo: correo.value,
+      telefono: telefono.value,
     };
 
     if (currentAction.value === 'create') {
@@ -250,6 +259,7 @@ function resetForm() {
   nombre.value = '';
   nit.value = '';
   correo.value = '';
+  telefono.value = '';
   isEditing.value = false;
   editingEmpresaId.value = null;
   empresaToDeleteId.value = null;

@@ -10,9 +10,10 @@ import SettingsView from '@/views/dashboard/SettingsView.vue'
 import ProfileView from '@/views/dashboard/ProfileView.vue'
 import HomeView from '@/views/HomeView.vue'
 import FormularioUsuarios from '@/views/FormularioUsuarios.vue'
-import TicketsView from '../views/TicketsView.vue' 
+import TicketsView from '../views/TicketsView.vue'
 // import GestionClientes from '../views/FormularioEmpresasView.vue' // ¡ELIMINADA ESTA IMPORTACIÓN DUPLICADA!
 import FormularioEmpresasView from '../views/FormularioEmpresasView.vue' // Mantenemos esta, que es la que se usa en la ruta
+import FormulariosProyectos from '@/views/FormulariosProyectos.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -75,7 +76,12 @@ const router = createRouter({
       component: FormularioEmpresasView, // Usamos el nombre de importación directo
       meta: { layout: 'MainLayout', requiresAuth: true, userType: 'interno' }, // Protegida y solo para internos
     },
-
+    {
+      path: '/proyectos',
+      name: 'FormulariosProyectos',
+      component: FormulariosProyectos,
+      meta: { layout: 'MainLayout' },
+    },
     { path: '/new-password', component: NewPasswordView, meta: { layout: 'AuthLayout' } },
   ],
 })

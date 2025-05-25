@@ -1,69 +1,88 @@
-import axios from 'axios';
+const API_BASE_URL = 'http://localhost:3333/api'
 
-// Define la URL base de tu API de AdonisJS
-const API_URL = 'http://localhost:3333/api'; // ¡Asegúrate de que esta sea tu URL correcta!
-
-// Interfaz para los datos de una empresa
 interface EmpresaData {
-  nombre: string;
-  nit: string;
-  correo: string;
+  nombre: string
+  nit: string
+  correo: string
+  telefono: string
 }
 
-/**
- * Crea una nueva empresa.
- * @param data Los datos de la empresa a crear.
- * @returns La empresa creada.
- */
-export async function crearEmpresa(data: EmpresaData): Promise<any> {
+export async function crearEmpresa(empresaData: EmpresaData) {
   try {
-    const response = await axios.post(`${API_URL}/empresas`, data);
-    return response.data;
-  } catch (error: any) {
-    console.error('Error al crear empresa:', error.response?.data?.message || error.message);
-    throw error;
+    const response = await fetch(`${API_BASE_URL}/empresas`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(empresaData),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.mensaje || 'Error al crear empresa')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error al crear empresa:', error)
+    throw error
   }
 }
 
-/**
- * Obtiene todas las empresas.
- * @returns Una lista de empresas.
- */
-export async function obtenerEmpresas(): Promise<any[]> {
+export async function obtenerEmpresas() {
   try {
-    const response = await axios.get(`${API_URL}/empresas`);
-    return response.data;
-  } catch (error: any) {
-    console.error('Error al obtener empresas:', error.response?.data?.message || error.message);
-    throw error;
+    const response = await fetch(`${API_BASE_URL}/empresas`)
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.mensaje || 'Error al obtener empresas')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error al obtener empresas:', error)
+    throw error
   }
 }
 
-/**
- * Actualiza una empresa existente.
- * @param id El ID de la empresa a actualizar.
- * @param data Los datos a actualizar.
- * @returns La empresa actualizada.
- */
-export async function actualizarEmpresa(id: number, data: Partial<EmpresaData>): Promise<any> {
+export async function actualizarEmpresa(id: number, empresaData: Partial<EmpresaData>) {
   try {
-    const response = await axios.put(`${API_URL}/empresas/${id}`, data);
-    return response.data;
-  } catch (error: any) {
-    console.error('Error al actualizar empresa:', error.response?.data?.message || error.message);
-    throw error;
+    const response = await fetch(`${API_BASE_URL}/empresas/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(empresaData),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.mensaje || 'Error al actualizar empresa')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error al actualizar empresa:', error)
+    throw error
   }
 }
 
-/**
- * Elimina una empresa.
- * @param id El ID de la empresa a eliminar.
- */
-export async function eliminarEmpresa(id: number): Promise<void> {
+export async function eliminarEmpresa(id: number) {
   try {
-    await axios.delete(`${API_URL}/empresas/${id}`);
-  } catch (error: any) {
-    console.error('Error al eliminar empresa:', error.response?.data?.message || error.message);
-    throw error;
+    const response = await fetch(`${API_BASE_URL}/empresas/${id}`, {
+      method: 'DELETE',
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.mensaje || 'Error al eliminar empresa')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error al eliminar empresa:', error)
+    throw error
   }
 }
+
+
