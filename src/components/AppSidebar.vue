@@ -42,7 +42,7 @@
       <v-list-item
         prepend-icon="mdi-table"
         title="Usuarios"
-        :to="{ path: '/crud' }"
+        :to="{ path: '/Usuarios' }"
         link
       />
       <v-list-item

@@ -1,152 +1,75 @@
-// src/services/permisosService.ts
+const BASE_URL = 'http://localhost:3333';
 
-const BASE_URL_API = 'http://localhost:3333/api';
+export default {
+  async obtenerRoles() {
+    const res = await fetch(`${BASE_URL}/roles`);
+    if (!res.ok) throw new Error('Error al obtener roles');
+    return await res.json();
+  },
 
-// Interfaz 'Rol'
-export interface Rol {
-  id: number;
-  nombre: string;
-  descripcion: string;
-  estado: string;
-  createdAt: string;
-  updatedAt: string;
-}
+  async obtenerItems() {
+    const res = await fetch(`${BASE_URL}/items`);
+    if (!res.ok) throw new Error('Error al obtener ítems');
+    return await res.json();
+  },
 
-// Interfaz 'Item' (previamente Modulo)
-export interface Item {
-  id: number;
-  nombre: string;
-  url: string;
-  icon: string;
-  createdAt: string;
-  updatedAt: string;
-}
+  async obtenerPermisos() {
+    const res = await fetch(`${BASE_URL}/permisos`);
+    if (!res.ok) throw new Error('Error al obtener permisos');
+    return await res.json();
+  },
 
-// Interfaz 'Permiso'
-export interface Permiso {
-  id: number;
-  nombre: string;
-  createdAt: string;
-  updatedAt: string;
-}
+  async obtenerAsignaciones() {
+    const res = await fetch(`${BASE_URL}/asignaciones`);
+    if (!res.ok) throw new Error('Error al obtener asignaciones');
+    return await res.json();
+  },
 
-// Interfaz para el payload que se envía al asignar permisos
-export interface CargaAsignacion {
-  roleId: number;
-  itemId: number;
-  permisosIds: number[];
-}
+  async asignarPermisosRolItem(data: { roleId: number, itemId: number, permisosIds: number[] }) {
+    const res = await fetch(`${BASE_URL}/asignaciones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rolId: data.roleId,
+        itemId: data.itemId,
+        permisosIds: data.permisosIds
+      }),
+    });
 
-// Interfaz para una asignación existente (para la tabla), tal como viene del backend
-// El backend nos devuelve cada permiso individualmente para cada Rol-Item.
-// El frontend luego agrupará esto.
-export interface AsignacionExistente {
-  id: number; // ID de la entrada individual en role_module_permissions
-  roleId: number;
-  permissionId: number;
-  itemId: number;
-  createdAt: string;
-  updatedAt: string;
-  // Propiedades de relación para mostrar en la tabla (el backend las incluye)
-  role?: Rol;
-  item?: Item;
-  permission?: Permiso;
-}
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Error al asignar permisos');
+    }
 
+    return await res.json();
+  },
 
-/**
- * Función auxiliar para manejar las respuestas de 'fetch'.
- */
-async function manejarRespuesta<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const datosError: any = await response.json().catch(() => ({ message: 'Error desconocido en la respuesta del servidor' }));
-    const mensajeError: string = datosError.message || datosError.errors?.[0]?.message || 'Error en la petición al servidor';
-    throw new Error(mensajeError);
+  // Nueva función para actualizar permisos
+async actualizarPermisosRolItem(data: { rolId: number, itemId: number, permisosIds: number[] }) {
+  const res = await fetch(`${BASE_URL}/asignaciones/actualizar-por-rol-item`, { // Nueva ruta
+    method: 'PUT', // O PATCH, dependiendo de tu convención
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || 'Error al actualizar permisos');
   }
-  return response.json() as Promise<T>;
-}
 
-const servicioPermisos = {
-  async obtenerRoles(): Promise<Rol[]> {
-    try {
-      const respuesta = await fetch(`${BASE_URL_API}/roles`);
-      return await manejarRespuesta<Rol[]>(respuesta);
-    } catch (error) {
-      console.error('Error al obtener roles:', error);
-      throw error;
-    }
-  },
+  return await res.json();
+},
 
-  async obtenerItems(): Promise<Item[]> {
-    try {
-      const respuesta = await fetch(`${BASE_URL_API}/items`);
-      return await manejarRespuesta<Item[]>(respuesta);
-    } catch (error) {
-      console.error('Error al obtener ítems:', error);
-      throw error;
-    }
-  },
+  async eliminarAsignacion(asignacionId: number) {
+  const res = await fetch(`${BASE_URL}/asignaciones/${asignacionId}`, {
+    method: 'DELETE',
+  });
 
-  async obtenerPermisos(): Promise<Permiso[]> {
-    try {
-      const respuesta = await fetch(`${BASE_URL_API}/permissions`);
-      return await manejarRespuesta<Permiso[]>(respuesta);
-    } catch (error) {
-      console.error('Error al obtener permisos:', error);
-      throw error;
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Error al eliminar asignación');
     }
-  },
 
-  async asignarPermisosRolItem(datos: CargaAsignacion): Promise<{ message: string }> {
-    try {
-      const respuesta = await fetch(`${BASE_URL_API}/assign-role-module-permissions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(datos),
-      });
-      return await manejarRespuesta<{ message: string }>(respuesta);
-    } catch (error) {
-      console.error('Error al asignar permisos:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Obtener todas las asignaciones existentes.
-   * El backend debe precargar las relaciones (rol, item, permission)
-   */
-  async obtenerAsignaciones(): Promise<AsignacionExistente[]> {
-    try {
-      const respuesta = await fetch(`${BASE_URL_API}/assignments`);
-      return await manejarRespuesta<AsignacionExistente[]>(respuesta);
-    } catch (error) {
-      console.error('Error al obtener asignaciones:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Nuevo método para eliminar todas las asignaciones de permisos para un rol y un ítem específicos.
-   * @param roleId El ID del rol.
-   * @param itemId El ID del ítem.
-   * @returns {Promise<{ message: string }>} Mensaje de confirmación.
-   */
-  async eliminarAsignacionPorRolItem(roleId: number, itemId: number): Promise<{ message: string }> {
-    try {
-      const respuesta = await fetch(`${BASE_URL_API}/assignments/${roleId}/${itemId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      return await manejarRespuesta<{ message: string }>(respuesta);
-    } catch (error) {
-      console.error(`Error al eliminar asignaciones para Rol ${roleId} e Ítem ${itemId}:`, error);
-      throw error;
-    }
-  }
+    return await res.json();
+  },
 };
-
-export default servicioPermisos;

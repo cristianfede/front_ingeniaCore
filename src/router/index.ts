@@ -60,7 +60,7 @@ const router = createRouter({
       meta: { layout: 'MainLayout' },
     },
     {
-      path: '/crud',
+      path: '/Usuarios',
       component: FormularioUsuarios,
       meta: { layout: 'MainLayout' },
     },
