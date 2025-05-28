@@ -47,7 +47,7 @@ export default {
   // Nueva función para actualizar permisos
 async actualizarPermisosRolItem(data: { rolId: number, itemId: number, permisosIds: number[] }) {
   const res = await fetch(`${BASE_URL}/asignaciones/actualizar-por-rol-item`, { // Nueva ruta
-    method: 'PUT', // O PATCH, dependiendo de tu convención
+    method: 'PUT', // O PATCH, dependiendo dé tu convención
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
