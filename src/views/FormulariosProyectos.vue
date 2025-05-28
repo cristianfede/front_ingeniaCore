@@ -143,6 +143,8 @@ function editProyecto(proyecto: any) {
 isEditing.value = true; editingProyectoId.value = proyecto.id;
  nombre.value = proyecto.nombre;
  empresa_id.value = proyecto.empresa_id;
+
+ window.scrollTo({ top: 0, behavior: 'smooth'})
 }
 
 // Función para eliminar un proyecto (muestra el diálogo de confirmación)

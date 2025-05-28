@@ -39,7 +39,7 @@
       <v-list-item
         prepend-icon="mdi-table"
         title="Usuarios"
-        :to="{ path: '/crud' }"
+        :to="{ path: '/Usuarios' }"
         link
       />
       <v-list-item
@@ -61,8 +61,10 @@
         link
       />
       <v-list-item
-        prepend-icon="mdi-account-key" title="Asignar Permisos"
-        :to="{ path: '/asignar-permisos' }" link
+        prepend-icon="mdi-domain"
+        title="Roles"
+        :to="{ path: '/Roles' }"
+        link
       />
     </v-list>
   </v-navigation-drawer>

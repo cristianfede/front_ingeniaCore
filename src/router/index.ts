@@ -13,7 +13,7 @@ import FormularioUsuarios from '@/views/FormularioUsuarios.vue'
 import TicketsView from '../views/TicketsView.vue'
 import FormularioEmpresasView from '../views/FormularioEmpresasView.vue'
 import FormulariosProyectos from '@/views/FormulariosProyectos.vue'
-import RolesPermisosView from '../views/Roles_permisos.vue'; // Importación de tu componente
+import FormularioRoles from "@/views/FormularioRolesView.vue"
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -59,7 +59,7 @@ const router = createRouter({
       meta: { layout: 'MainLayout' },
     },
     {
-      path: '/crud',
+      path: '/Usuarios',
       component: FormularioUsuarios,
       meta: { layout: 'MainLayout' },
     },
@@ -82,21 +82,13 @@ const router = createRouter({
       component: FormulariosProyectos,
       meta: { layout: 'MainLayout' },
     },
-    {
-      path: '/new-password',
-      component: NewPasswordView,
-      meta: { layout: 'AuthLayout' }
+     {
+      path: '/Roles',
+      name: 'FormularioRoles',
+      component: FormularioRoles,
+      meta: { layout: 'MainLayout' },
     },
-    {
-      path: '/asignar-permisos',
-      name: 'asignar-permisos',
-      component: RolesPermisosView,
-      meta: {
-        layout: 'MainLayout', // <-- Asegúrate de que esta ruta use tu MainLayout
-        title: 'Asignar Permisos',
-        // ¡Hemos eliminado hideSidebar: true y hideNavbar: true de aquí!
-      }
-    },
+    { path: '/new-password', component: NewPasswordView, meta: { layout: 'AuthLayout' } },
   ],
 })
 
