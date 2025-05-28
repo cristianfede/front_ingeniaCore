@@ -7,9 +7,8 @@ import {
   eliminarTicket,
   obtenerEstados,
   obtenerPrioridades,
-  // CAMBIO AQUÍ: Importa obtenerEmpresas en lugar de obtenerClientes
-  obtenerEmpresas,
-  obtenerUsuariosAsignables,
+  obtenerEmpresas, // Ya importado para clientes/empresas
+  obtenerUsuariosAsignables, // Este es el que modificaremos para filtrar
   obtenerCategorias,
   obtenerServicios
 } from '../services/ticketService';
@@ -39,10 +38,9 @@ const editingTicketId = ref<number | null>(null);
 // --- Listas para los v-select (cargadas desde la API) ---
 const estados = ref<{ id: number; nombre: string }[]>([]);
 const prioridades = ref<{ id: number; nombre: string }[]>([]);
-// CAMBIO AQUÍ: Tipado para 'clientes' ahora representa 'empresas' (asumiendo id y nombre)
-const clientes = ref<{ id: number; nombre: string }[]>([]);
-// Tipado para usuariosAsignados para incluir 'apellido'
-const usuariosAsignados = ref<{ id: number; nombre: string; apellido: string }[]>([]);
+const clientes = ref<{ id: number; nombre: string }[]>([]); // Representa 'empresas'
+// Tipado para usuariosAsignados para incluir 'apellido' y 'role' para el filtro
+const usuariosAsignados = ref<{ id: number; nombre: string; apellido: string; role?: { id: number; nombre: string } }[]>([]);
 const categorias = ref<{ id: number; nombre: string }[]>([]);
 const servicios = ref<{ id: number; nombre: string }[]>([]);
 
@@ -129,7 +127,8 @@ async function handleConfirmAction() {
     if (currentAction.value === 'create') {
       const nuevoTicket = await crearTicket(formData);
       tickets.value.push(nuevoTicket);
-      sortBy.value = [{ key: 'id', order: 'desc' }];
+      // Asegúrate de que la tabla se ordene por ID descendente después de crear
+      sortBy.value = [{ key: 'id', order: 'desc' }]; 
       snackbar.value = { show: true, message: 'Ticket creado exitosamente.', color: 'success' };
     } else if (currentAction.value === 'update') {
       const actualizado = await actualizarTicket(editingTicketId.value!, formData);
@@ -179,6 +178,7 @@ type MySortItem = {
   key: string;
   order: boolean | 'asc' | 'desc' | undefined;
 };
+// Inicialmente, la tabla se ordenará de forma ascendente (del 1 al 100)
 const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }]);
 const sortDesc = ref(false);
 
@@ -186,7 +186,6 @@ const sortDesc = ref(false);
 const headers = [
   { title: 'ID', key: 'id', sortable: false },
   { title: 'Asunto', key: 'titulo', sortable: false },
-  // CAMBIO AQUÍ: Cambiado 'Cliente' a 'Empresa' para la cabecera de la tabla
   { title: 'Empresa', key: 'cliente.nombre', sortable: false },
   { title: 'Prioridad', key: 'prioridad.nombre', sortable: false },
   { title: 'Estado', key: 'estado.nombre', sortable: false },
@@ -205,7 +204,7 @@ const sortByIdDesc = () => {
 onMounted(async () => {
   await cargarTickets();
   await cargarListasReferencia();
-  sortByIdAsc();
+  sortByIdAsc(); // Asegura que la tabla empiece ordenada ASCENDENTE
 });
 
 async function cargarTickets() {
@@ -224,9 +223,17 @@ async function cargarListasReferencia() {
   try {
     estados.value = await obtenerEstados();
     prioridades.value = await obtenerPrioridades();
-    // CAMBIO AQUÍ: Llamada a obtenerEmpresas en lugar de obtenerClientes
     clientes.value = await obtenerEmpresas();
-    usuariosAsignados.value = await obtenerUsuariosAsignables();
+
+    // CAMBIO CLAVE: Obtener todos los usuarios asignables y filtrar por rol "Técnico de soporte"
+    const allUsers = await obtenerUsuariosAsignables();
+    usuariosAsignados.value = allUsers.filter(user =>
+      user.role && user.role.nombre === 'Técnico de soporte'
+    );
+    // Nota: Esto asume que el objeto 'user' devuelto por obtenerUsuariosAsignables
+    // tiene una propiedad 'role' que a su vez tiene una propiedad 'nombre' (ej. user.role.nombre).
+    // Si la estructura de tu backend es diferente, ajusta 'user.role.nombre' según sea necesario.
+
     categorias.value = await obtenerCategorias();
     servicios.value = await obtenerServicios();
   } catch (error: any) {

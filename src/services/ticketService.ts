@@ -34,7 +34,9 @@ export async function crearTicket(ticketData: FormData) {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.mensaje || 'Error al crear ticket');
+      // CORRECCIÓN: Intenta obtener el mensaje de error de 'message', 'error' o 'mensaje'
+      const errorMessage = errorData.message || errorData.error || errorData.mensaje || 'Error al crear ticket';
+      throw new Error(errorMessage);
     }
 
     return await response.json();
@@ -54,7 +56,9 @@ export async function obtenerTickets() {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.mensaje || 'Error al obtener tickets');
+      // CORRECCIÓN: Intenta obtener el mensaje de error de 'message', 'error' o 'mensaje'
+      const errorMessage = errorData.message || errorData.error || errorData.mensaje || 'Error al obtener tickets';
+      throw new Error(errorMessage);
     }
 
     return await response.json();
@@ -73,6 +77,7 @@ export async function obtenerTickets() {
 export async function actualizarTicket(id: number, ticketData: FormData) {
   try {
     // Para enviar FormData con PUT/PATCH en AdonisJS, a menudo se usa un POST con _method=PUT
+    // Esto es necesario porque FormData no funciona directamente con PUT/PATCH en todas las implementaciones.
     const response = await fetch(`${API_BASE_URL}/tickets/${id}?_method=PUT`, {
       method: 'POST', // Método POST para enviar FormData con _method=PUT
       body: ticketData,
@@ -80,7 +85,9 @@ export async function actualizarTicket(id: number, ticketData: FormData) {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.mensaje || 'Error al actualizar ticket');
+      // CORRECCIÓN: Intenta obtener el mensaje de error de 'message', 'error' o 'mensaje'
+      const errorMessage = errorData.message || errorData.error || errorData.mensaje || 'Error al actualizar ticket';
+      throw new Error(errorMessage);
     }
 
     return await response.json();
@@ -103,9 +110,12 @@ export async function eliminarTicket(id: number) {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.mensaje || 'Error al eliminar ticket');
+      // CORRECCIÓN: Intenta obtener el mensaje de error de 'message', 'error' o 'mensaje'
+      const errorMessage = errorData.message || errorData.error || errorData.mensaje || 'Error al eliminar ticket';
+      throw new Error(errorMessage);
     }
 
+    // Si la respuesta es 204 No Content, no intentamos parsear JSON
     return response.status === 204 ? {} : await response.json();
   } catch (error) {
     console.error('Error en ticketService (eliminarTicket):', error);
@@ -122,10 +132,12 @@ export async function eliminarTicket(id: number) {
 export async function obtenerEstados() {
   try {
     // Endpoint para la tabla estado_tickets
-    const response = await fetch(`${API_BASE_URL}/estado_tickets`);
+    const response = await fetch(`${API_BASE_URL}/estados`); // Asumo que la ruta es /api/estados
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.mensaje || 'Error al obtener estados de tickets');
+      // CORRECCIÓN: Intenta obtener el mensaje de error de 'message', 'error' o 'mensaje'
+      const errorMessage = errorData.message || errorData.error || errorData.mensaje || 'Error al obtener estados de tickets';
+      throw new Error(errorMessage);
     }
     return await response.json();
   } catch (error) {
@@ -143,7 +155,9 @@ export async function obtenerPrioridades() {
     const response = await fetch(`${API_BASE_URL}/prioridades`);
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.mensaje || 'Error al obtener prioridades');
+      // CORRECCIÓN: Intenta obtener el mensaje de error de 'message', 'error' o 'mensaje'
+      const errorMessage = errorData.message || errorData.error || errorData.mensaje || 'Error al obtener prioridades';
+      throw new Error(errorMessage);
     }
     return await response.json();
   } catch (error) {
@@ -161,7 +175,9 @@ export async function obtenerEmpresas() {
     const response = await fetch(`${API_BASE_URL}/empresas`);
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.mensaje || 'Error al obtener empresas');
+      // CORRECCIÓN: Intenta obtener el mensaje de error de 'message', 'error' o 'mensaje'
+      const errorMessage = errorData.message || errorData.error || errorData.mensaje || 'Error al obtener empresas';
+      throw new Error(errorMessage);
     }
     return await response.json();
   } catch (error) {
@@ -172,9 +188,13 @@ export async function obtenerEmpresas() {
 
 /**
  * Obtiene la lista de USUARIOS (para asignar tickets).
- * Si necesitas filtrar por rol (ej. 'tecnico'), esto se haría en el backend
- * en el controlador de usuarios o en una ruta específica como '/usuarios/tecnicos'.
- * Por ahora, apunta a la tabla 'usuarios' general.
+ * Para filtrar por rol (ej. 'Técnico de soporte'), la forma más eficiente es que el backend
+ * proporcione un endpoint específico para ello, o que el endpoint general de usuarios
+ * incluya la información del rol para que el frontend pueda filtrar.
+ *
+ * Por ahora, mantendremos la llamada a `/usuarios` general, y el filtro se hará en el frontend
+ * como lo tienes en el componente Vue. Si tu backend tiene un endpoint como `/usuarios/tecnicos`,
+ * cámbialo aquí.
  */
 export async function obtenerUsuariosAsignables() {
   try {
@@ -183,7 +203,9 @@ export async function obtenerUsuariosAsignables() {
     const response = await fetch(`${API_BASE_URL}/usuarios`);
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.mensaje || 'Error al obtener usuarios asignables');
+      // CORRECCIÓN: Intenta obtener el mensaje de error de 'message', 'error' o 'mensaje'
+      const errorMessage = errorData.message || errorData.error || errorData.mensaje || 'Error al obtener usuarios asignables';
+      throw new Error(errorMessage);
     }
     return await response.json();
   } catch (error) {
@@ -201,7 +223,9 @@ export async function obtenerCategorias() {
     const response = await fetch(`${API_BASE_URL}/categorias`);
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.mensaje || 'Error al obtener categorías');
+      // CORRECCIÓN: Intenta obtener el mensaje de error de 'message', 'error' o 'mensaje'
+      const errorMessage = errorData.message || errorData.error || errorData.mensaje || 'Error al obtener categorías';
+      throw new Error(errorMessage);
     }
     return await response.json();
   } catch (error) {
@@ -219,7 +243,9 @@ export async function obtenerServicios() {
     const response = await fetch(`${API_BASE_URL}/servicios`);
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.mensaje || 'Error al obtener servicios');
+      // CORRECCIÓN: Intenta obtener el mensaje de error de 'message', 'error' o 'mensaje'
+      const errorMessage = errorData.message || errorData.error || errorData.mensaje || 'Error al obtener servicios';
+      throw new Error(errorMessage);
     }
     return await response.json();
   } catch (error) {
