@@ -14,8 +14,7 @@
             <h3 class="text-2xl font-semibold mb-4 section-title-blue">Foto de Perfil</h3>
             <div class="avatar-container">
               <img
-                :src="'https://i.pravatar.cc/160?img=3'" alt="Foto de Perfil"
-                class="profile-avatar"
+              :src="profilePicturePreview || authStore.user.profilePictureUrl || 'https://i.pravatar.cc/160?img=3'" alt="Foto de Perfil"
                 @error="handleImageError"
               />
               <label for="profile-picture-upload" class="upload-overlay">
@@ -43,13 +42,19 @@
           </div>
 
           <div class="info-section">
-            <h3 class="text-2xl font-semibold mb-4 section-title-blue">Datos Personales</h3>
+
             <div class="space-y-3">
-              <p><span class="font-medium info-label">Nombre Completo:</span> Juan Pérez</p>
-              <p><span class="font-medium info-label">Email:</span> juan.perez@example.com</p>
-              <p><span class="font-medium info-label">Teléfono:</span> +57 300 123 4567</p>
-              <p><span class="font-medium info-label">Creado el:</span> 15 de Enero de 2023</p>
-              <p><span class="font-medium info-label">Última Actualización:</span> 20 de Mayo de 2024</p>
+              <div class="info-section">
+  <h3 class="text-2xl font-semibold mb-4 section-title-blue">Datos Personales</h3>
+  <div class="space-y-3">
+    <p><span class="font-medium info-label">Nombre Completo:</span> {{ authStore.user.nombre || 'N/A' }} {{ authStore.user.apellido || 'N/A' }} </p>
+    <p><span class="font-medium info-label">Email:</span> {{ authStore.user.correo || 'N/A' }}</p>
+    <p><span class="font-medium info-label">Teléfono:</span> {{ authStore.user.telefono || 'N/A' }}</p>
+    <p><span class="font-medium info-label">Creado el:</span> {{ formatDate(authStore.user.createdAt) }}</p>
+    <p><span class="font-medium info-label">Última Actualización:</span> {{ formatDate(authStore.user.updatedAt) }}</p>
+  </div>
+</div>
+
             </div>
           </div>
 
@@ -166,14 +171,14 @@ const uploadProfilePicture = async () => {
   try {
     const formData = new FormData();
     formData.append('profile_picture', selectedFile.value);
-    
+
     // --- Llama a tu servicio para subir la imagen ---
     // Necesitarás implementar esta función en un archivo de servicio (ej. userService.ts)
     // que haga una petición POST/PUT a tu backend con el FormData.
     // El backend debería devolver la nueva URL de la imagen.
     // Ejemplo de cómo podría ser:
     // const response = await uploadProfileImage(authStore.user.id, formData);
-    
+
     // --- Mock de respuesta para desarrollo (eliminar en producción) ---
     await new Promise(resolve => setTimeout(resolve, 1500)); // Simula una carga
     const mockResponse = { profilePictureUrl: 'https://i.pravatar.cc/160?img=' + Math.floor(Math.random() * 70) };
