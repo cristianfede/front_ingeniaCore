@@ -13,7 +13,9 @@ import FormularioUsuarios from '@/views/FormularioUsuarios.vue'
 import TicketsView from '../views/TicketsView.vue'
 import FormularioEmpresasView from '../views/FormularioEmpresasView.vue'
 import FormulariosProyectos from '@/views/FormulariosProyectos.vue'
-import FormularioRoles from "@/views/FormularioRolesView.vue"
+// Importa ambos componentes de roles
+import FormularioRolesView from '@/views/FormularioRolesView.vue' // Tu componente original
+import CreacionRoles from "@/views/CreacionRoles.vue"           // Tu nuevo componente CRUD de roles
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -82,12 +84,33 @@ const router = createRouter({
       component: FormulariosProyectos,
       meta: { layout: 'MainLayout' },
     },
-     {
-      path: '/Roles',
+    // ====================================================================
+    // RUTAS PARA ROLES (AHORA SEPARADAS)
+    // ====================================================================
+    {
+      // Ruta para tu vista original de "Formularios Roles"
+      path: '/Roles', // Mantiene la ruta original con 'R' mayúscula
       name: 'FormularioRoles',
-      component: FormularioRoles,
+      component: FormularioRolesView, // Apunta al componente original
       meta: { layout: 'MainLayout' },
     },
+    {
+      // Ruta para el CRUD de Roles (la vista que creamos)
+      path: '/roles-crud', // ¡NUEVA RUTA ÚNICA para el CRUD de Roles!
+      name: 'RolesCrudList', // Nombre para la lista de roles del CRUD
+      component: CreacionRoles, // Apunta a tu nuevo componente CRUD
+      meta: { layout: 'MainLayout' },
+    },
+    {
+      // Ruta para la edición del CRUD de Roles
+      path: '/roles-crud/editar/:id', // Ruta para editar un rol específico del CRUD
+      name: 'RolesCrudEdit', // Nombre para la edición de roles del CRUD
+      component: CreacionRoles, // Reutiliza el mismo componente CRUD
+      props: true, // Pasa el ':id' de la ruta como una prop al componente
+      meta: { layout: 'MainLayout' },
+    },
+    // ====================================================================
+
     { path: '/new-password', component: NewPasswordView, meta: { layout: 'AuthLayout' } },
   ],
 })
