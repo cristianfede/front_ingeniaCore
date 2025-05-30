@@ -1,75 +1,94 @@
-const BASE_URL = 'http://localhost:3333';
+// src/services/PermisosService.ts
 
-export default {
-  async obtenerRoles() {
-    const res = await fetch(`${BASE_URL}/roles`);
-    if (!res.ok) throw new Error('Error al obtener roles');
-    return await res.json();
-  },
+const PERMISOS_API_URL = 'http://localhost:3333/api/permisos'; // ¡Asegúrate que este prefijo coincida con tus rutas de AdonisJS!
 
-  async obtenerItems() {
-    const res = await fetch(`${BASE_URL}/items`);
-    if (!res.ok) throw new Error('Error al obtener ítems');
-    return await res.json();
-  },
+interface Permiso {
+  id: number;
+  nombre: string;
+  descripcion?: string; // Opcional, si tu modelo lo tiene
+  createdAt?: string;
+  updatedAt?: string;
+}
 
-  async obtenerPermisos() {
-    const res = await fetch(`${BASE_URL}/permisos`);
-    if (!res.ok) throw new Error('Error al obtener permisos');
-    return await res.json();
-  },
-
-  async obtenerAsignaciones() {
-    const res = await fetch(`${BASE_URL}/asignaciones`);
-    if (!res.ok) throw new Error('Error al obtener asignaciones');
-    return await res.json();
-  },
-
-  async asignarPermisosRolItem(data: { roleId: number, itemId: number, permisosIds: number[] }) {
-    const res = await fetch(`${BASE_URL}/asignaciones`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        rolId: data.roleId,
-        itemId: data.itemId,
-        permisosIds: data.permisosIds
-      }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || 'Error al asignar permisos');
-    }
-
-    return await res.json();
-  },
-
-  // Nueva función para actualizar permisos
-async actualizarPermisosRolItem(data: { rolId: number, itemId: number, permisosIds: number[] }) {
-  const res = await fetch(`${BASE_URL}/asignaciones/actualizar-por-rol-item`, { // Nueva ruta
-    method: 'PUT', // O PATCH, dependiendo dé tu convención
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || 'Error al actualizar permisos');
+async function handleResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || `Error en la solicitud a la API: ${response.statusText}`);
   }
+  if (response.status === 204) {
+    return null as T; // No content for DELETE operations
+  }
+  return response.json();
+}
 
-  return await res.json();
-},
-
-  async eliminarAsignacion(asignacionId: number) {
-  const res = await fetch(`${BASE_URL}/asignaciones/${asignacionId}`, {
-    method: 'DELETE',
-  });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || 'Error al eliminar asignación');
+const PermisosService = {
+  async getPermisos(): Promise<Permiso[]> {
+    try {
+      const response = await fetch(PERMISOS_API_URL);
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Error al obtener permisos:', error);
+      throw error;
     }
+  },
 
-    return await res.json();
-  },
+  async getPermisoById(id: number): Promise<Permiso> {
+    try {
+      const response = await fetch(`${PERMISOS_API_URL}/${id}`);
+      return handleResponse(response);
+    } catch (error) {
+      console.error(`Error al obtener permiso ${id}:`, error);
+      throw error;
+    }
+  },
+
+  async createPermiso(nombre: string, descripcion?: string): Promise<Permiso> {
+    try {
+      const response = await fetch(PERMISOS_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ nombre, descripcion }),
+      });
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Error al crear permiso:', error);
+      throw error;
+    }
+  },
+
+  async updatePermiso(id: number, nombre: string, descripcion?: string): Promise<Permiso> {
+    try {
+      const response = await fetch(`${PERMISOS_API_URL}/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ nombre, descripcion }),
+      });
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Error al actualizar permiso:', error);
+      throw error;
+    }
+  },
+
+  async deletePermiso(id: number): Promise<void> {
+    try {
+      const response = await fetch(`${PERMISOS_API_URL}/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok && response.status !== 204) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Error al eliminar permiso: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error al eliminar permiso:', error);
+      throw error;
+    }
+  },
 };
+
+export default PermisosService;
+export type { Permiso };
