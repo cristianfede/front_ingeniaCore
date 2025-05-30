@@ -7,7 +7,7 @@
     color="#90CAF9"
     style="margin-top: 64px;"
   >
-      <v-list>
+    <v-list>
       <v-list-item
         prepend-avatar="https://randomuser.me/api/portraits/women/85.jpg"
         :subtitle="auth.user?.correo"
@@ -61,10 +61,11 @@
         link
       />
       <v-list-item
-        prepend-icon="mdi-domain"
-        title="Roles"
-        :to="{ path: '/Roles' }"
-        link
+        prepend-icon="mdi-account-group"
+        title="Creación de Roles" :to="{ path: '/roles-crud' }" link
+      />
+      <v-list-item
+        prepend-icon="mdi-account-group-outline" title="Formularios Roles" :to="{ path: '/Roles' }" link
       />
     </v-list>
   </v-navigation-drawer>
