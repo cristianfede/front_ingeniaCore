@@ -4,26 +4,14 @@
 // Es crucial que esta URL coincida con el prefijo de tus rutas en AdonisJS (generalmente /api)
 const API_BASE_URL = 'http://localhost:3333/api';
 
-// Interfaz para los datos de un ticket (al crear o actualizar)
-interface TicketData {
-  titulo: string;
-  descripcion: string;
-  estado_id: number | null;
-  prioridad_id: number | null;
-  cliente_id: number | null; // Este será el ID de la Empresa
-  usuario_asignado_id: number | null; // Este será el ID del Técnico
-  categoria_id: number | null;
-  servicio_id: number | null;
-  // Si 'fecha_asignacion' es parte de tu DB y la quieres manejar, agrégala aquí.
-  // Por ahora la dejamos comentada como en tu original.
-  // fecha_asignacion: string;
-}
+// (Eliminada la interfaz TicketData porque no se utiliza)
 
 /**
  * Crea un nuevo ticket en la base de datos.
  * @param ticketData Los datos del ticket a crear (ahora espera FormData para archivos).
  * @returns El ticket creado con su ID y otras propiedades.
  */
+
 export async function crearTicket(ticketData: FormData) {
   try {
     const response = await fetch(`${API_BASE_URL}/tickets`, {
@@ -78,8 +66,8 @@ export async function actualizarTicket(id: number, ticketData: FormData) {
   try {
     // Para enviar FormData con PUT/PATCH en AdonisJS, a menudo se usa un POST con _method=PUT
     // Esto es necesario porque FormData no funciona directamente con PUT/PATCH en todas las implementaciones.
-    const response = await fetch(`${API_BASE_URL}/tickets/${id}?_method=PUT`, {
-      method: 'POST', // Método POST para enviar FormData con _method=PUT
+    const response = await fetch(`${API_BASE_URL}/tickets/${id}`, {
+      method: 'PATCH', // Método POST para enviar FormData con _method=PUT
       body: ticketData,
     });
 
