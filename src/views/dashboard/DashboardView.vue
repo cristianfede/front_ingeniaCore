@@ -13,21 +13,27 @@
           <v-col cols="12" md="4">
             <v-card class="metric-card" elevation="2">
               <v-card-title class="text-h6 metric-title">Tickets Abiertos</v-card-title>
-              <v-card-text class="text-center text-5xl font-bold metric-value">124</v-card-text>
+              <v-card-text class="text-center text-5xl font-bold metric-value">
+                {{ metrics.ticketsAbiertos }}
+              </v-card-text>
               <v-card-subtitle class="text-center metric-subtitle">Tickets pendientes de resolución</v-card-subtitle>
             </v-card>
           </v-col>
           <v-col cols="12" md="4">
             <v-card class="metric-card" elevation="2">
               <v-card-title class="text-h6 metric-title">Tickets Cerrados (Mes)</v-card-title>
-              <v-card-text class="text-center text-5xl font-bold metric-value">87</v-card-text>
+              <v-card-text class="text-center text-5xl font-bold metric-value">
+                {{ metrics.ticketsCerradosMes }}
+              </v-card-text>
               <v-card-subtitle class="text-center metric-subtitle">En los últimos 30 días</v-card-subtitle>
             </v-card>
           </v-col>
           <v-col cols="12" md="4">
             <v-card class="metric-card" elevation="2">
-              <v-card-title class="text-h6 metric-title">Nuevos Clientes</v-card-title>
-              <v-card-text class="text-center text-5xl font-bold metric-value">5</v-card-text>
+              <v-card-title class="text-h6 metric-title">Nuevos Usuarios</v-card-title>
+              <v-card-text class="text-center text-5xl font-bold metric-value">
+                {{ metrics.nuevosUsuarios }}
+              </v-card-text>
               <v-card-subtitle class="text-center metric-subtitle">Este trimestre</v-card-subtitle>
             </v-card>
           </v-col>
@@ -38,20 +44,13 @@
             <v-card class="section-card" elevation="2">
               <v-card-title class="text-h5 section-title-blue">Actividad Reciente</v-card-title>
               <v-card-text>
-                <v-list dense>
-                  <v-list-item>
-                    <v-list-item-title>Ticket #1005: Problema de red en Empresa A</v-list-item-title>
-                    <v-list-item-subtitle>Hace 2 horas - Asignado a Sofía</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title>Nuevo cliente: TechSolutions S.A.S.</v-list-item-title>
-                    <v-list-item-subtitle>Ayer - Registrado por Diego</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title>Ticket #1004: Solicitud de acceso a sistema</v-list-item-title>
-                    <v-list-item-subtitle>Hace 3 días - Cerrado por Carlos</v-list-item-subtitle>
+                <v-list dense v-if="actividadReciente.length">
+                  <v-list-item v-for="item in actividadReciente" :key="item.id">
+                    <v-list-item-title>{{ item.evento }}</v-list-item-title>
+                    <v-list-item-subtitle>{{ item.fecha }} - {{ item.asignadoA }}</v-list-item-subtitle>
                   </v-list-item>
                 </v-list>
+                <p v-else class="text-center text-grey">No hay actividad reciente.</p>
               </v-card-text>
             </v-card>
           </v-col>
@@ -59,20 +58,13 @@
             <v-card class="section-card" elevation="2">
               <v-card-title class="text-h5 section-title-green">Tareas Pendientes</v-card-title>
               <v-card-text>
-                <v-list dense>
-                  <v-list-item>
-                    <v-list-item-title>Revisar tickets de alta prioridad</v-list-item-title>
-                    <v-list-item-subtitle>Vence: Hoy</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title>Preparar informe mensual de rendimiento</v-list-item-title>
-                    <v-list-item-subtitle>Vence: Viernes</v-list-item-subtitle>
-                  </v-list-item>
-                  <v-list-item>
-                    <v-list-item-title>Capacitación de nuevo software</v-list-item-title>
-                    <v-list-item-subtitle>Fecha: 25 de Mayo</v-list-item-subtitle>
+                <v-list dense v-if="tareasPendientes.length">
+                  <v-list-item v-for="item in tareasPendientes" :key="item.id">
+                    <v-list-item-title>{{ item.titulo }}</v-list-item-title>
+                    <v-list-item-subtitle>{{ item.detalle }}</v-list-item-subtitle>
                   </v-list-item>
                 </v-list>
+                <p v-else class="text-center text-grey">No hay tareas pendientes.</p>
               </v-card-text>
             </v-card>
           </v-col>
@@ -85,19 +77,96 @@
           </v-btn>
         </div>
       </v-card-text>
+      <v-overlay :model-value="loading" class="align-center justify-center">
+        <v-progress-circular
+          color="primary"
+          indeterminate
+          size="64"
+        ></v-progress-circular>
+      </v-overlay>
+      <v-alert
+        v-if="error"
+        type="error"
+        prominent
+        class="mt-4"
+      >
+        Hubo un error al cargar los datos del dashboard: {{ error }}
+      </v-alert>
     </v-card>
   </v-container>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue'; // Importa 'ref' para variables reactivas
 import { authSetStore } from '@/stores/AuthStore';
+
+// Define la URL base de tu API de AdonisJS
+const API_BASE_URL = 'http://localhost:3333/api'; // <-- ASEGÚRATE DE QUE ESTA URL SEA CORRECTA PARA TU BACKEND
 
 const authStore = authSetStore();
 
+// Variables reactivas para almacenar los datos del dashboard
+const metrics = ref({ // Inicializa con valores por defecto
+  ticketsAbiertos: 0,
+  ticketsCerradosMes: 0,
+  nuevosUsuarios: 0,
+});
+const actividadReciente = ref<any[]>([]); // Array vacío para la actividad
+const tareasPendientes = ref<any[]>([]); // Array vacío para las tareas
+const loading = ref(false); // Estado de carga
+const error = ref<string | null>(null); // Mensaje de error
+
+const fetchDashboardData = async () => {
+  loading.value = true; // Activa el estado de carga
+  error.value = null; // Limpia errores previos
+
+  try {
+    const token = authStore.token; // Obtiene el token de autenticación del store
+
+    const headers: HeadersInit = { // Usa HeadersInit para las cabeceras de fetch
+      'Content-Type': 'application/json',
+    };
+
+    // Si la ruta del dashboard en AdonisJS está protegida (como acordamos),
+    // es crucial enviar el token en la cabecera Authorization.
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Realiza la petición GET a tu API de AdonisJS usando fetch
+    const response = await fetch(`${API_BASE_URL}/dashboard`, {
+      method: 'GET',
+      headers: headers,
+    });
+
+    // Manejo de errores HTTP en fetch
+    if (!response.ok) {
+      const errorData = await response.json(); // Intenta leer el mensaje de error del servidor
+      throw new Error(`Error: ${response.status} - ${errorData.message || 'Error en la respuesta del servidor'}`);
+    }
+
+    const data = await response.json(); // Parsea la respuesta JSON
+
+    // Verifica si la respuesta contiene datos y actualiza las variables reactivas
+    if (data) {
+      metrics.value = data.metrics;
+      actividadReciente.value = data.actividadReciente;
+      tareasPendientes.value = data.tareasPendientes;
+    }
+  } catch (err: any) {
+    console.error('Error fetching dashboard data:', err);
+    // Errores de red o errores lanzados desde 'throw new Error'
+    error.value = `Error al cargar datos: ${err.message || 'Ocurrió un error desconocido'}`;
+  } finally {
+    loading.value = false; // Desactiva el estado de carga al finalizar (éxito o error)
+  }
+};
+
 onMounted(async () => {
-  // Asegúrate de que el usuario esté cargado en el store al montar el componente
+  // Primero, asegúrate de que la información del usuario (y el token) estén cargados en el store.
   await authStore.checkAuth();
+  // Luego, carga los datos del dashboard desde la API.
+  await fetchDashboardData();
 });
 </script>
 
@@ -106,7 +175,7 @@ onMounted(async () => {
 
 /* Estilos para el contenedor principal de la tarjeta del dashboard */
 .dashboard-card {
-  max-width: 1200px; /* Un poco más ancho para el dashboard */
+  max-width: 1200px;
   margin: 20px auto;
   background-color: #ffffff;
   border-radius: 12px;
@@ -126,7 +195,7 @@ onMounted(async () => {
 
 /* Estilos para las tarjetas de métricas */
 .metric-card {
-  background-color: #E3F2FD; /* Azul claro */
+  background-color: #E3F2FD;
   border-radius: 8px;
   padding: 20px;
   text-align: center;
@@ -139,27 +208,27 @@ onMounted(async () => {
 }
 
 .metric-title {
-  color: #1976D2; /* Azul oscuro */
+  color: #1976D2;
   font-family: 'Inter', sans-serif;
   font-weight: 600;
   margin-bottom: 10px;
 }
 
 .metric-value {
-  color: #1565C0; /* Azul más oscuro */
+  color: #1565C0;
   font-family: 'Inter', sans-serif;
-  font-weight: 800; /* Más audaz */
+  font-weight: 800;
 }
 
 .metric-subtitle {
-  color: #42A5F5; /* Azul medio */
+  color: #42A5F5;
   font-family: 'Inter', sans-serif;
   font-size: 0.9rem;
 }
 
 /* Estilos para las tarjetas de sección (Actividad Reciente, Tareas Pendientes) */
 .section-card {
-  background-color: #F5F5F5; /* Gris muy claro */
+  background-color: #F5F5F5;
   border-radius: 8px;
   padding: 20px;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -202,7 +271,7 @@ onMounted(async () => {
   font-family: 'Inter', sans-serif;
   font-weight: 600;
   text-transform: none;
-  border-radius: 25px; /* Botón más redondeado */
+  border-radius: 25px;
   padding: 15px 30px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   transition: background-color 0.3s ease, transform 0.3s ease;
@@ -210,7 +279,7 @@ onMounted(async () => {
 
 .explore-button:hover {
   transform: translateY(-2px);
-  background-color: #1565C0 !important; /* Un azul un poco más oscuro */
+  background-color: #1565C0 !important;
 }
 
 /* Clases de utilidad de Vuetify y Tailwind (asegúrate de que Tailwind esté configurado) */
