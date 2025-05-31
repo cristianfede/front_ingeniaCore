@@ -109,20 +109,20 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { authSetStore } from '@/stores/AuthStore';
-import { useRouter } from 'vue-router';
-// Importa tu servicio de usuario para la carga de imágenes, o crea uno si no existe.
-// Ejemplo: import { uploadProfileImage } from '@/services/userService';
+import { uploadFile } from '@/services/uploadService'; // Asegúrate que este es tu archivo correcto
+
+const handleImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement;
+  target.src = 'https://i.pravatar.cc/160?img=3'; // Fallback image URL
+};
 
 const authStore = authSetStore();
-const router = useRouter();
 
-// Estado para la carga de fotos de perfil
 const profilePictureInput = ref<HTMLInputElement | null>(null);
 const selectedFile = ref<File | null>(null);
 const profilePicturePreview = ref<string | null>(null);
 const uploading = ref(false);
 
-// Estado para el Snackbar
 const snackbar = ref({
   show: false,
   message: '',
@@ -130,7 +130,6 @@ const snackbar = ref({
 });
 
 onMounted(async () => {
-  // Asegúrate de que el usuario esté cargado en el store al montar el componente
   await authStore.checkAuth();
 });
 
@@ -162,59 +161,47 @@ const handleFileChange = (event: Event) => {
 };
 
 const uploadProfilePicture = async () => {
-  if (!selectedFile.value || !authStore.user?.id) {
-    snackbar.value = { show: true, message: 'Por favor, selecciona una imagen primero.', color: 'warning' };
+  if (!selectedFile.value) {
+    snackbar.value = {
+      show: true,
+      message: 'Por favor, selecciona una imagen primero.',
+      color: 'warning',
+    };
     return;
   }
 
   uploading.value = true;
   try {
-    const formData = new FormData();
-    formData.append('profile_picture', selectedFile.value);
+    const uploaded = await uploadFile(selectedFile.value);
+    if (uploaded?.url && authStore.user) {
+      authStore.user.profilePictureUrl = uploaded.url;
 
-    // --- Llama a tu servicio para subir la imagen ---
-    // Necesitarás implementar esta función en un archivo de servicio (ej. userService.ts)
-    // que haga una petición POST/PUT a tu backend con el FormData.
-    // El backend debería devolver la nueva URL de la imagen.
-    // Ejemplo de cómo podría ser:
-    // const response = await uploadProfileImage(authStore.user.id, formData);
-
-    // --- Mock de respuesta para desarrollo (eliminar en producción) ---
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simula una carga
-    const mockResponse = { profilePictureUrl: 'https://i.pravatar.cc/160?img=' + Math.floor(Math.random() * 70) };
-    // --- Fin Mock ---
-
-    // if (response && response.profilePictureUrl) { // Usar esto con tu servicio real
-    if (mockResponse && mockResponse.profilePictureUrl) { // Usar esto con el mock
-      // Actualiza la URL de la foto de perfil en el store del usuario
-      // Asegúrate de que tu AuthStore.ts tenga una forma de actualizar el user.profilePictureUrl
-      if (authStore.user) {
-        authStore.user.profilePictureUrl = mockResponse.profilePictureUrl;
-        // Opcional: Actualizar localStorage si el store no lo hace automáticamente
-        // localStorage.setItem('user', JSON.stringify(authStore.user));
-      }
-      snackbar.value = { show: true, message: 'Foto de perfil actualizada exitosamente.', color: 'success' };
-      selectedFile.value = null; // Limpiar el archivo seleccionado
-      profilePicturePreview.value = null; // Limpiar la previsualización
+      snackbar.value = {
+        show: true,
+        message: 'Foto de perfil actualizada correctamente.',
+        color: 'success',
+      };
     } else {
-      throw new Error('La respuesta de la subida no contiene la URL de la imagen.');
+      throw new Error('Error al subir la imagen.');
     }
-  } catch (error: any) {
-    console.error('Error al subir la foto de perfil:', error);
-    snackbar.value = { show: true, message: error.message || 'Error al subir la foto de perfil.', color: 'error' };
+  } catch (err) {
+    snackbar.value = {
+      show: true,
+      message: 'Error al subir la foto.',
+      color: 'error',
+    };
+    console.error(err);
   } finally {
     uploading.value = false;
   }
 };
 
-const handleImageError = (event: Event) => {
-  // En caso de que la URL de la imagen no cargue, muestra una imagen de placeholder
-  const imgElement = event.target as HTMLImageElement;
-  imgElement.src = 'https://placehold.co/160x160/FF5252/ffffff?text=Error';
-};
-
 const editProfile = () => {
-  router.push('/settings'); // Redirige a la ruta /settings
+  snackbar.value = {
+    show: true,
+    message: 'Función de edición de perfil aún no implementada.',
+    color: 'info',
+  };
 };
 </script>
 

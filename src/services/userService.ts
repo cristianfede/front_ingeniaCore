@@ -85,19 +85,3 @@ export async function eliminarUsuario(id: number) {
     throw error
   }
 }
-  export async function uploadProfileImage(userId: number, formData: FormData) {
-    const response = await fetch(`${API_BASE_URL}/usuarios/${userId}/upload-profile-picture`, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.mensaje || 'Error al subir la imagen de perfil');
-    }
-
-    return await response.json();
-  }
