@@ -14,7 +14,7 @@ import TicketsView from '../views/TicketsView.vue'
 import FormularioEmpresasView from '../views/FormularioEmpresasView.vue'
 import FormulariosProyectos from '@/views/FormulariosProyectos.vue'
 // Importa ambos componentes de roles
-import FormularioRolesView from '@/views/FormularioRolesView.vue' // Tu componente original
+import FormularioPermisosView from '@/views/FormularioPermisosView.vue' // Tu componente original
 import CreacionRoles from "@/views/CreacionRoles.vue"           // Tu nuevo componente CRUD de roles
 
 const router = createRouter({
@@ -89,9 +89,9 @@ const router = createRouter({
     // ====================================================================
     {
       // Ruta para tu vista original de "Formularios Roles"
-      path: '/Roles', // Mantiene la ruta original con 'R' mayúscula
-      name: 'FormularioRoles',
-      component: FormularioRolesView, // Apunta al componente original
+      path: '/permisos', // Mantiene la ruta original con 'R' mayúscula
+      name: 'FormularioPermisos',
+      component: FormularioPermisosView, // Apunta al componente original
       meta: { layout: 'MainLayout' },
     },
     {
