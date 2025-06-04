@@ -34,7 +34,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
     throw new Error(errorData.message || `Error en la solicitud a la API: ${response.statusText}`);
   }
   if (response.status === 204) {
-    return null as T; // Para respuestas sin contenido
+    return null as T;
   }
   return response.json();
 }
