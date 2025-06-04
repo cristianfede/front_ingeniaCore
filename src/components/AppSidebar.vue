@@ -65,7 +65,7 @@
         title="Creación de Roles" :to="{ path: '/roles-crud' }" link
       />
       <v-list-item
-        prepend-icon="mdi-account-group-outline" title="Formularios Roles" :to="{ path: '/Roles' }" link
+        prepend-icon="mdi-account-group-outline" title="Formularios permisos" :to="{ path: '/permisos' }" link
       />
     </v-list>
   </v-navigation-drawer>
