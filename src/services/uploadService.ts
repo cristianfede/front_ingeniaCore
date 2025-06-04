@@ -30,7 +30,7 @@ await fetch('http://localhost:3333/usuarios/profile-picture-url', {
   headers: {
     'Content-Type': 'application/json',
   },
-  credentials: 'include', // si usas sesión, sino puedes quitarlo
+  //credentials: 'include', // si usas sesión, sino puedes quitarlo
   body: JSON.stringify({
     userId: 'el-id-del-usuario', // ¡debes pasar el ID del usuario!
     url,
