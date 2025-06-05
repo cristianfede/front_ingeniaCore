@@ -111,7 +111,7 @@ const router = createRouter({
     },
     // ====================================================================
 
-    { path: '/new-password', component: NewPasswordView, meta: { layout: 'AuthLayout' } },
+    { path: '/new-password/:token', component: NewPasswordView, meta: { layout: 'AuthLayout' } },
   ],
 })
 
