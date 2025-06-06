@@ -16,7 +16,7 @@
                 v-for="(item, i) in settingsCategories"
                 :key="i"
                 :value="item"
-                active-color="primary"
+                color="primary"
                 :class="{ 'v-list-item--active': selectedTab === item.value }"
                 @click="selectedTab = item.value"
                 class="settings-nav-item"
