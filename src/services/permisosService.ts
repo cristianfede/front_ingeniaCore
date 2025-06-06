@@ -27,7 +27,6 @@ interface Asignacion {
   permiso: Permiso;
 }
 
-
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const errorData = await response.json();
@@ -210,3 +209,4 @@ const PermisosService = {
 
 export default PermisosService;
 export type { Permiso, Rol, Item, Asignacion };
+
