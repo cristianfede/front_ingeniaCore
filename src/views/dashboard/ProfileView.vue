@@ -10,25 +10,27 @@
         </p>
 
         <div v-if="authStore.user" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <!-- Sección de foto de perfil -->
           <div class="profile-picture-section">
             <h3 class="text-2xl font-semibold mb-4 section-title-blue">Foto de Perfil</h3>
-            <div class="avatar-container">
+            <div class="avatar-container" @click="triggerFileInput">
               <img
-              :src="profilePicturePreview || authStore.user.profilePictureUrl || 'https://i.pravatar.cc/160?img=3'" alt="Foto de Perfil"
+                :src="profilePicturePreview || authStore.user.profilePictureUrl || 'https://i.pravatar.cc/160?img=3'"
+                alt="Foto de Perfil"
                 @error="handleImageError"
               />
-              <label for="profile-picture-upload" class="upload-overlay">
+              <label class="upload-overlay">
                 <v-icon>mdi-camera</v-icon>
               </label>
-              <input
-                type="file"
-                id="profile-picture-upload"
-                ref="profilePictureInput"
-                @change="handleFileChange"
-                class="hidden-input"
-                accept="image/*"
-              />
             </div>
+            <input
+              type="file"
+              ref="profilePictureInput"
+              @change="handleFileChange"
+              class="hidden-input"
+              accept="image/*"
+              style="display:none"
+            />
             <v-btn
               v-if="selectedFile"
               @click="uploadProfilePicture"
@@ -41,26 +43,22 @@
             <p v-if="uploading" class="uploading-text">Subiendo...</p>
           </div>
 
+          <!-- Sección datos personales -->
           <div class="info-section">
-
+            <h3 class="text-2xl font-semibold mb-4 section-title-blue">Datos Personales</h3>
             <div class="space-y-3">
-              <div class="info-section">
-  <h3 class="text-2xl font-semibold mb-4 section-title-blue">Datos Personales</h3>
-  <div class="space-y-3">
-    <p><span class="font-medium info-label">Nombre Completo:</span> {{ authStore.user.nombre || 'N/A' }} {{ authStore.user.apellido || 'N/A' }} </p>
-    <p><span class="font-medium info-label">Email:</span> {{ authStore.user.correo || 'N/A' }}</p>
-    <p><span class="font-medium info-label">Teléfono:</span> {{ authStore.user.telefono || 'N/A' }}</p>
-    <p><span class="font-medium info-label">Creado el:</span> {{ formatDate(authStore.user.createdAt) }}</p>
-    <p><span class="font-medium info-label">Última Actualización:</span> {{ formatDate(authStore.user.updatedAt) }}</p>
-  </div>
-</div>
-
+              <p><span class="font-medium info-label">Nombre Completo:</span> {{ authStore.user.nombre || 'N/A' }} {{ authStore.user.apellido || 'N/A' }}</p>
+              <p><span class="font-medium info-label">Email:</span> {{ authStore.user.correo || 'N/A' }}</p>
+              <p><span class="font-medium info-label">Teléfono:</span> {{ authStore.user.telefono || 'N/A' }}</p>
+              <p><span class="font-medium info-label">Creado el:</span> {{ formatDate(authStore.user.createdAt) }}</p>
+              <p><span class="font-medium info-label">Última Actualización:</span> {{ formatDate(authStore.user.updatedAt) }}</p>
             </div>
           </div>
 
+          <!-- Sección roles -->
           <div class="info-section">
             <h3 class="text-2xl font-semibold mb-4 section-title-green">Roles Asignados</h3>
-            <div v-if="authStore.user.roles && authStore.user.roles.length > 0">
+            <div v-if="authStore.user.roles?.length">
               <ul class="list-disc list-inside space-y-2">
                 <li v-for="role in authStore.user.roles" :key="role.id" class="info-text">
                   {{ role.nombre }}
@@ -70,6 +68,7 @@
             <p v-else class="info-text-secondary">No hay roles asignados.</p>
           </div>
 
+          <!-- Sección empresa externa o mensaje -->
           <div v-if="authStore.user.tipoUsuario === 'externo' && authStore.user.empresa" class="info-section col-span-1 md:col-span-2">
             <h3 class="text-2xl font-semibold mb-4 section-title-purple">Información de la Empresa</h3>
             <div class="space-y-3">
@@ -82,21 +81,27 @@
             <p class="info-text-secondary">No hay información de empresa disponible.</p>
           </div>
 
+          <!-- Empresa asociada -->
           <div class="info-section col-span-1 md:col-span-2">
             <h3 class="text-2xl font-semibold mb-4 section-title-yellow">Empresa Asociada</h3>
-            <p class="info-text">IngeniaCore</p> </div>
+            <p class="info-text">IngeniaCore</p>
+          </div>
 
+          <!-- Botón editar -->
           <div class="col-span-1 md:col-span-2 text-center mt-6">
             <v-btn @click="editProfile" color="blue" class="edit-button">
               <v-icon left>mdi-pencil</v-icon> Editar Perfil
             </v-btn>
           </div>
         </div>
+
+        <!-- Estado de carga -->
         <div v-else class="text-center mt-12 p-8 loading-section">
           <p class="text-xl font-semibold loading-text">Cargando información del usuario...</p>
         </div>
       </v-card-text>
     </v-card>
+
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
       {{ snackbar.message }}
       <template #actions>
@@ -109,105 +114,84 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { authSetStore } from '@/stores/AuthStore';
-import { uploadFile } from '@/services/uploadService'; // Asegúrate que este es tu archivo correcto
-
-const handleImageError = (event: Event) => {
-  const target = event.target as HTMLImageElement;
-  target.src = 'https://i.pravatar.cc/160?img=3'; // Fallback image URL
-};
+import { uploadFile } from '@/services/uploadService';
 
 const authStore = authSetStore();
 
-const profilePictureInput = ref<HTMLInputElement | null>(null);
-const selectedFile = ref<File | null>(null);
-const profilePicturePreview = ref<string | null>(null);
+const profilePictureInput = ref<HTMLInputElement|null>(null);
+const selectedFile = ref<File|null>(null);
+const profilePicturePreview = ref<string|null>(null);
 const uploading = ref(false);
 
-const snackbar = ref({
-  show: false,
-  message: '',
-  color: 'success',
-});
+const snackbar = ref({ show: false, message: '', color: 'success' });
 
-onMounted(async () => {
-  await authStore.checkAuth();
-});
+onMounted(() => authStore.checkAuth());
 
 const formatDate = (dateString: string) => {
   if (!dateString) return 'N/A';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  const d = new Date(dateString);
+  return d.toLocaleDateString('es-ES', {
+    year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit'
   });
 };
 
-const handleFileChange = (event: Event) => {
-  const input = event.target as HTMLInputElement;
-  if (input.files && input.files[0]) {
-    selectedFile.value = input.files[0];
+const handleImageError = (e: Event) => {
+  (e.target as HTMLImageElement).src = 'https://i.pravatar.cc/160?img=3';
+};
+
+const triggerFileInput = () => {
+  profilePictureInput.value?.click();
+};
+
+const handleFileChange = (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0] ?? null;
+  selectedFile.value = file;
+  if (file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
-      profilePicturePreview.value = e.target?.result as string;
-    };
-    reader.readAsDataURL(selectedFile.value);
+    reader.onload = () => profilePicturePreview.value = reader.result as string;
+    reader.readAsDataURL(file);
   } else {
-    selectedFile.value = null;
     profilePicturePreview.value = null;
   }
 };
 
 const uploadProfilePicture = async () => {
   if (!selectedFile.value) {
-    snackbar.value = {
-      show: true,
-      message: 'Por favor, selecciona una imagen primero.',
-      color: 'warning',
-    };
+    snackbar.value = { show: true, message: 'Por favor, selecciona una imagen primero.', color: 'warning' };
     return;
   }
-
   uploading.value = true;
   try {
     const uploaded = await uploadFile(selectedFile.value);
-    if (uploaded?.url && authStore.user) {
-      authStore.user.profilePictureUrl = uploaded.url;
-
-      snackbar.value = {
-        show: true,
-        message: 'Foto de perfil actualizada correctamente.',
-        color: 'success',
-      };
-    } else {
-      throw new Error('Error al subir la imagen.');
-    }
+    if (!uploaded?.url || !authStore.user) throw new Error('Error subiendo imagen.');
+    const res = await fetch('http://localhost:3333/usuarios/profile-picture-url', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authStore.token}`,
+      },
+      body: JSON.stringify({ userId: authStore.user.id, url: uploaded.url }),
+    });
+    if (!res.ok) throw new Error('Error guardando URL en DB.');
+    authStore.user.profilePictureUrl = uploaded.url;
+    localStorage.setItem('user', JSON.stringify(authStore.user));
+    snackbar.value = { show: true, message: 'Foto de perfil actualizada correctamente.', color: 'success' };
   } catch (err) {
-    snackbar.value = {
-      show: true,
-      message: 'Error al subir la foto.',
-      color: 'error',
-    };
     console.error(err);
+    snackbar.value = { show: true, message: 'Error al subir o guardar la foto.', color: 'error' };
   } finally {
     uploading.value = false;
+    selectedFile.value = null;
+    profilePicturePreview.value = null;
   }
 };
 
 const editProfile = () => {
-  snackbar.value = {
-    show: true,
-    message: 'Función de edición de perfil aún no implementada.',
-    color: 'info',
-  };
+  // Lógica para editar perfil
 };
 </script>
-
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 /* Estilos para el contenedor principal de la tarjeta */
 .profile-card {
   max-width: 1000px; /* Tamaño más grande */
@@ -429,3 +413,5 @@ const editProfile = () => {
   margin-right: 0.5rem;
 }
 </style>
+
+
