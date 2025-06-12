@@ -26,8 +26,8 @@ const editingUserId = ref<number | null>(null)
 const showConfirmDialog = ref(false);
 const confirmDialogTitle = ref('');
 const confirmDialogMessage = ref(''); // CORRECCIÓN: Variable 'confirmDialogMessage' declarada como ref
-const confirmDialogConfirmText = ref(''); 
-const confirmDialogConfirmColor = ref(''); 
+const confirmDialogConfirmText = ref('');
+const confirmDialogConfirmColor = ref('');
 const currentAction = ref(''); // 'create', 'update', 'delete'
 const userToDeleteId = ref<number | null>(null);
 // -----------------------------------------------------------
@@ -40,7 +40,7 @@ type MySortItem = {
     order: boolean | 'asc' | 'desc' | undefined
 }
 // Inicialmente, la tabla se ordenará de forma ascendente (del 1 al 100)
-const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }]); 
+const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }]);
 const sortDesc = ref(false)
 
 const headers = [
@@ -67,7 +67,6 @@ async function fetchRoles() {
         }
         const data = await response.json();
         roles.value = data;
-        console.log('Roles cargados:', roles.value);
     } catch (error: any) {
         console.error('Error al obtener los roles:', error);
         snackbar.value = { show: true, message: `Error al cargar los roles: ${error.message}`, color: 'error' };
@@ -81,13 +80,12 @@ async function cargarUsuarios() {
     try {
         const fetchedUsers = await obtenerUsuarios();
         usuarios.value = fetchedUsers.map((user: any) => {
-            const roleDisplayName = user.role ? user.role.nombre : 'N/A'; 
+            const roleDisplayName = user.role ? user.role.nombre : 'N/A';
             return {
                 ...user,
                 rol_display_name: roleDisplayName // Crea una nueva propiedad para mostrar el nombre del rol
             };
         });
-        console.log('Usuarios cargados y mapeados:', usuarios.value);
     } catch (err) {
         snackbar.value = {
             show: true,
@@ -111,7 +109,7 @@ function editUser(user: any) {
     correo.value = user.correo
     password.value = '' // No precargamos la contraseña por seguridad
 
-    rol.value = user.rolId || user.rol_id || (user.role ? user.role.id : ''); 
+    rol.value = user.rolId || user.rol_id || (user.role ? user.role.id : '');
 }
 
 /**
@@ -141,13 +139,13 @@ async function submit() {
         currentAction.value = 'create';
     }
     // Añadido para depuración: verificar los valores antes de mostrar el diálogo
-    console.log('DEBUG: Propiedades del diálogo antes de mostrar:', {
+    /*console.log('DEBUG: Propiedades del diálogo antes de mostrar:', {
         title: confirmDialogTitle.value,
         message: confirmDialogMessage.value,
         confirmText: confirmDialogConfirmText.value,
         confirmColor: confirmDialogConfirmColor.value,
         action: currentAction.value
-    });
+    });*/
     showConfirmDialog.value = true;
 }
 
@@ -198,7 +196,7 @@ async function handleConfirmAction() {
                 sortByIdAsc(); // Volver a ordenar ASCENDENTE para otras operaciones
             }
         }
-        
+
         resetForm(); // Limpia el formulario después de la operación
     } catch (err: any) {
         // Captura el error completo para una mejor depuración
@@ -254,7 +252,7 @@ onMounted(async () => {
  */
 const filteredUsers = computed(() =>
     usuarios.value.filter((u) =>
-        Object.values(u).some((val) => 
+        Object.values(u).some((val) =>
             // Asegúrate de que 'val' no sea null/undefined antes de llamar a toLowerCase()
             String(val || '').toLowerCase().includes(search.value.toLowerCase())
         )
@@ -297,35 +295,35 @@ function handleCancelAction() {
                         <v-col cols="12" md="6"> <v-text-field label="Apellido" v-model="apellido" required outlined /> </v-col>
                         <v-col cols="12" md="6"> <v-text-field label="Email" v-model="correo" type="email" required outlined /> </v-col>
                         <v-col cols="12" md="6"> <v-text-field label="Teléfono" v-model="telefono" type="tel" required outlined /> </v-col>
-                        
+
                         <v-col cols="12" md="6">
                             <v-select
                                 label="Rol"
                                 v-model="rol"
                                 :items="roles"
-                                item-title="nombre" 
-                                item-value="id" 
-                                required 
+                                item-title="nombre"
+                                item-value="id"
+                                required
                                 outlined
                             ></v-select>
                         </v-col>
 
-                        <v-col cols="12" md="6"> 
-                            <v-text-field 
-                                label="Contraseña" 
-                                v-model="password" 
-                                type="password" 
-                                :required="!isEditing" 
-                                minlength="6" 
-                                outlined 
-                            /> 
+                        <v-col cols="12" md="6">
+                            <v-text-field
+                                label="Contraseña"
+                                v-model="password"
+                                type="password"
+                                :required="!isEditing"
+                                minlength="6"
+                                outlined
+                            />
                         </v-col>
                     </v-row>
                     <div class="d-flex justify-start">
                         <v-btn v-if="isEditing" color="secondary" @click="resetForm" class="mr-2">Cancelar Edición</v-btn>
-                        
+
                         <v-btn v-if="!isEditing" color="grey" text @click="resetForm" class="mr-2">Limpiar Formulario</v-btn>
-                        
+
                         <v-btn color="primary" type="submit">{{ isEditing ? 'Actualizar Usuario' : 'Crear Usuario' }}</v-btn>
                     </div>
                 </v-form>
@@ -336,13 +334,13 @@ function handleCancelAction() {
             <v-card-title class="text-h6">
                 Lista de Usuarios
             </v-card-title>
-            
+
             <v-row align="center" class="px-4 pb-4">
-                <v-col cols="12" sm="6" md="5" lg="4"> 
+                <v-col cols="12" sm="6" md="5" lg="4">
                     <v-text-field v-model="search" label="Buscar usuario" prepend-inner-icon="mdi-magnify" outlined dense hide-details />
                 </v-col>
-                
-                <v-col cols="12" sm="6" md="7" lg="8" class="d-flex justify-start"> 
+
+                <v-col cols="12" sm="6" md="7" lg="8" class="d-flex justify-start">
                     <v-btn small @click="sortByIdAsc" class="mr-2" color="#1976D2" dark>
                         <v-icon left>mdi-sort-ascending</v-icon> Más Antiguos
                     </v-btn>
