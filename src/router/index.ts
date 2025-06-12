@@ -11,9 +11,11 @@ import ProfileView from '@/views/dashboard/ProfileView.vue'
 import HomeView from '@/views/HomeView.vue'
 import FormularioUsuarios from '@/views/FormularioUsuarios.vue'
 import TicketsView from '../views/TicketsView.vue'
-// import GestionClientes from '../views/FormularioEmpresasView.vue' // ¡ELIMINADA ESTA IMPORTACIÓN DUPLICADA!
-import FormularioEmpresasView from '../views/FormularioEmpresasView.vue' // Mantenemos esta, que es la que se usa en la ruta
+import FormularioEmpresasView from '../views/FormularioEmpresasView.vue'
 import FormulariosProyectos from '@/views/FormulariosProyectos.vue'
+// Importa ambos componentes de roles
+import FormularioPermisosView from '@/views/FormularioPermisosView.vue' // Tu componente original
+import CreacionRoles from "@/views/CreacionRoles.vue"           // Tu nuevo componente CRUD de roles
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -59,22 +61,22 @@ const router = createRouter({
       meta: { layout: 'MainLayout' },
     },
     {
-      path: '/crud',
+      path: '/Usuarios',
       component: FormularioUsuarios,
       meta: { layout: 'MainLayout' },
     },
 
     {
-      path: '/tickets', // <-- Nueva ruta
+      path: '/tickets',
       name: 'tickets',
       component: TicketsView,
-      meta: { layout: 'MainLayout' }, // <--- ¡AÑADIDO ESTO!
+      meta: { layout: 'MainLayout' },
     },
     {
-      path: '/formulario-empresas', // ¡RUTA Y NOMBRE ACTUALIZADOS!
+      path: '/formulario-empresas',
       name: 'FormularioEmpresas',
-      component: FormularioEmpresasView, // Usamos el nombre de importación directo
-      meta: { layout: 'MainLayout', requiresAuth: true, userType: 'interno' }, // Protegida y solo para internos
+      component: FormularioEmpresasView,
+      meta: { layout: 'MainLayout', requiresAuth: true, userType: 'interno' },
     },
     {
       path: '/proyectos',
@@ -82,6 +84,33 @@ const router = createRouter({
       component: FormulariosProyectos,
       meta: { layout: 'MainLayout' },
     },
+    // ====================================================================
+    // RUTAS PARA ROLES (AHORA SEPARADAS)
+    // ====================================================================
+    {
+      // Ruta para tu vista original de "Formularios Roles"
+      path: '/permisos', // Mantiene la ruta original con 'R' mayúscula
+      name: 'FormularioPermisos',
+      component: FormularioPermisosView, // Apunta al componente original
+      meta: { layout: 'MainLayout' },
+    },
+    {
+      // Ruta para el CRUD de Roles (la vista que creamos)
+      path: '/roles-crud', // ¡NUEVA RUTA ÚNICA para el CRUD de Roles!
+      name: 'RolesCrudList', // Nombre para la lista de roles del CRUD
+      component: CreacionRoles, // Apunta a tu nuevo componente CRUD
+      meta: { layout: 'MainLayout' },
+    },
+    {
+      // Ruta para la edición del CRUD de Roles
+      path: '/roles-crud/editar/:id', // Ruta para editar un rol específico del CRUD
+      name: 'RolesCrudEdit', // Nombre para la edición de roles del CRUD
+      component: CreacionRoles, // Reutiliza el mismo componente CRUD
+      props: true, // Pasa el ':id' de la ruta como una prop al componente
+      meta: { layout: 'MainLayout' },
+    },
+    // ====================================================================
+
     { path: '/new-password', component: NewPasswordView, meta: { layout: 'AuthLayout' } },
   ],
 })

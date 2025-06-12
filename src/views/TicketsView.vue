@@ -7,9 +7,8 @@ import {
   eliminarTicket,
   obtenerEstados,
   obtenerPrioridades,
-  // CAMBIO AQUÍ: Importa obtenerEmpresas en lugar de obtenerClientes
-  obtenerEmpresas,
-  obtenerUsuariosAsignables,
+  obtenerEmpresas, // Ya importado para clientes/empresas
+  obtenerUsuariosAsignables, // Este es el que modificaremos para filtrar
   obtenerCategorias,
   obtenerServicios
 } from '../services/ticketService';
@@ -20,7 +19,7 @@ const titulo = ref('');
 const descripcion = ref('');
 const estado_id = ref<number | null>(null);
 const prioridad_id = ref<number | null>(null);
-const cliente_id = ref<number | null>(null); // Este ahora será el ID de la Empresa
+const empresa_id = ref<number | null>(null); // Este ahora será el ID de la Empresa
 const usuario_asignado_id = ref<number | null>(null); // Este será el ID del Técnico
 const categoria_id = ref<number | null>(null);
 const servicio_id = ref<number | null>(null);
@@ -39,10 +38,9 @@ const editingTicketId = ref<number | null>(null);
 // --- Listas para los v-select (cargadas desde la API) ---
 const estados = ref<{ id: number; nombre: string }[]>([]);
 const prioridades = ref<{ id: number; nombre: string }[]>([]);
-// CAMBIO AQUÍ: Tipado para 'clientes' ahora representa 'empresas' (asumiendo id y nombre)
-const clientes = ref<{ id: number; nombre: string }[]>([]);
-// Tipado para usuariosAsignados para incluir 'apellido'
-const usuariosAsignados = ref<{ id: number; nombre: string; apellido: string }[]>([]);
+const empresa = ref<{ id: number; nombre: string }[]>([]); // Representa 'empresas'
+// Tipado para usuariosAsignados para incluir 'apellido' y 'role' para el filtro
+const usuariosAsignados = ref<{ id: number; nombre: string; apellido: string; role?: { id: number; nombre: string } }[]>([]);
 const categorias = ref<{ id: number; nombre: string }[]>([]);
 const servicios = ref<{ id: number; nombre: string }[]>([]);
 
@@ -60,15 +58,16 @@ const ticketToDeleteId = ref<number | null>(null);
  * @param ticket El objeto ticket a editar.
  */
 function editTicket(ticket: any) {
+
   isEditing.value = true;
   editingTicketId.value = ticket.id;
   titulo.value = ticket.titulo;
   descripcion.value = ticket.descripcion;
-  estado_id.value = ticket.estado_id;
-  prioridad_id.value = ticket.prioridad_id;
+  estado_id.value = ticket.estado?.id || null; // Asegúrate de que usas 'estado?.id' si la relación se precarga
+  prioridad_id.value = ticket.prioridad?.id || null;
   // Asigna los IDs de las relaciones, usando ?.id para seguridad si la relación es nula
-  cliente_id.value = ticket.cliente?.id || null; // Ahora 'cliente' se refiere a la empresa
-  usuario_asignado_id.value = ticket.usuario_asignado?.id || null; // 'usuario_asignado' se refiere al técnico
+  empresa_id.value = ticket.empresa?.id || null; // Ahora 'cliente' se refiere a la empresa
+  usuario_asignado_id.value = ticket.usuarioAsignado?.id || null; // 'usuario_asignado' se refiere al técnico
   categoria_id.value = ticket.categoria?.id || null;
   servicio_id.value = ticket.servicio?.id || null;
   archivoAdjunto.value = null;
@@ -117,7 +116,7 @@ async function handleConfirmAction() {
     formData.append('descripcion', descripcion.value);
     formData.append('estado_id', String(estado_id.value));
     formData.append('prioridad_id', String(prioridad_id.value));
-    if (cliente_id.value !== null) formData.append('cliente_id', String(cliente_id.value));
+    if (empresa_id.value !== null) formData.append('empresas_id', String(empresa_id.value));
     if (usuario_asignado_id.value !== null) formData.append('usuario_asignado_id', String(usuario_asignado_id.value));
     if (categoria_id.value !== null) formData.append('categoria_id', String(categoria_id.value));
     if (servicio_id.value !== null) formData.append('servicio_id', String(servicio_id.value));
@@ -129,6 +128,7 @@ async function handleConfirmAction() {
     if (currentAction.value === 'create') {
       const nuevoTicket = await crearTicket(formData);
       tickets.value.push(nuevoTicket);
+      // Asegúrate de que la tabla se ordene por ID descendente después de crear
       sortBy.value = [{ key: 'id', order: 'desc' }];
       snackbar.value = { show: true, message: 'Ticket creado exitosamente.', color: 'success' };
     } else if (currentAction.value === 'update') {
@@ -161,7 +161,7 @@ function resetForm() {
   descripcion.value = '';
   estado_id.value = null;
   prioridad_id.value = null;
-  cliente_id.value = null;
+  empresa_id.value = null;
   usuario_asignado_id.value = null;
   categoria_id.value = null;
   servicio_id.value = null;
@@ -179,6 +179,7 @@ type MySortItem = {
   key: string;
   order: boolean | 'asc' | 'desc' | undefined;
 };
+// Inicialmente, la tabla se ordenará de forma ascendente (del 1 al 100)
 const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }]);
 const sortDesc = ref(false);
 
@@ -186,11 +187,10 @@ const sortDesc = ref(false);
 const headers = [
   { title: 'ID', key: 'id', sortable: false },
   { title: 'Asunto', key: 'titulo', sortable: false },
-  // CAMBIO AQUÍ: Cambiado 'Cliente' a 'Empresa' para la cabecera de la tabla
-  { title: 'Empresa', key: 'cliente.nombre', sortable: false },
+  { title: 'Empresa', key: 'empresa.nombre', sortable: false },
   { title: 'Prioridad', key: 'prioridad.nombre', sortable: false },
   { title: 'Estado', key: 'estado.nombre', sortable: false },
-  { title: 'Técnico', key: 'usuario_asignado.nombre', sortable: false },
+  { title: 'Técnico', key: 'usuarioAsignado.nombre', sortable: false },
   { title: 'Acciones', key: 'actions', sortable: false },
 ];
 
@@ -205,7 +205,7 @@ const sortByIdDesc = () => {
 onMounted(async () => {
   await cargarTickets();
   await cargarListasReferencia();
-  sortByIdAsc();
+  sortByIdAsc(); // Asegura que la tabla empiece ordenada ASCENDENTE
 });
 
 async function cargarTickets() {
@@ -224,9 +224,17 @@ async function cargarListasReferencia() {
   try {
     estados.value = await obtenerEstados();
     prioridades.value = await obtenerPrioridades();
-    // CAMBIO AQUÍ: Llamada a obtenerEmpresas en lugar de obtenerClientes
-    clientes.value = await obtenerEmpresas();
-    usuariosAsignados.value = await obtenerUsuariosAsignables();
+    empresa.value = await obtenerEmpresas();
+
+    // CAMBIO CLAVE: Obtener todos los usuarios asignables y filtrar por rol "Técnico de soporte"
+    const allUsers = await obtenerUsuariosAsignables();
+    usuariosAsignados.value = allUsers.filter(user =>
+      user.role && user.role.nombre === 'Técnico de soporte'
+    );
+    // Nota: Esto asume que el objeto 'user' devuelto por obtenerUsuariosAsignables
+    // tiene una propiedad 'role' que a su vez tiene una propiedad 'nombre' (ej. user.role.nombre).
+    // Si la estructura de tu backend es diferente, ajusta 'user.role.nombre' según sea necesario.
+
     categorias.value = await obtenerCategorias();
     servicios.value = await obtenerServicios();
   } catch (error: any) {
@@ -239,10 +247,10 @@ const filteredTickets = computed(() =>
   tickets.value.filter((t) =>
     String(t.id).toLowerCase().includes(search.value.toLowerCase()) ||
     t.titulo.toLowerCase().includes(search.value.toLowerCase()) ||
-    (t.cliente?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) || // Filtrado por nombre de empresa
+    (t.empresa?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) || // Filtrado por nombre de empresa
     (t.prioridad?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) ||
     (t.estado?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) ||
-    (t.usuario_asignado?.nombre || '').toLowerCase().includes(search.value.toLowerCase())
+    (t.usuarioAsignado?.nombre || '').toLowerCase().includes(search.value.toLowerCase())
   )
 );
 
@@ -333,48 +341,31 @@ function clearSelectedFile() {
                 density="compact"
                 class="mb-3"
               ></v-select>
-              <v-autocomplete
+              <v-select
                 label="Empresa Asociada"
-                v-model="cliente_id"
-                :items="clientes"
+                v-model="empresa_id"
+                :items="empresa"
+                item-title="nombre"
                 item-value="id"
+                required
                 outlined
-                clearable
                 density="compact"
-                hide-no-data
-                hide-selected
-                placeholder="Escribe para buscar o seleccionar la empresa"
-              >
-                <template v-slot:item="{ item }">
-                  <v-list-item-title>{{ item.raw.nombre }}</v-list-item-title>
-                </template>
-                <template v-slot:selection="{ item }">
-                  {{ item.raw.nombre }}
-                </template>
-              </v-autocomplete>
+                class="mb-3"
+              ></v-select>
             </v-col>
 
             <v-col cols="12" md="6">
-              <v-autocomplete
+              <v-select
                 label="Asignado a (Técnico)"
                 v-model="usuario_asignado_id"
                 :items="usuariosAsignados"
+                item-title="nombre"
                 item-value="id"
                 outlined
                 clearable
                 density="compact"
                 class="mb-3"
-                hide-no-data
-                hide-selected
-                placeholder="Escribe para buscar o seleccionar al técnico"
-              >
-                <template v-slot:item="{ item }">
-                  <v-list-item-title>{{ item.raw.nombre }} {{ item.raw.apellido }}</v-list-item-title>
-                </template>
-                <template v-slot:selection="{ item }">
-                  {{ item.raw.nombre }} {{ item.raw.apellido }}
-                </template>
-              </v-autocomplete>
+              ></v-select>
               <v-select
                 label="Categoría de Servicio"
                 v-model="categoria_id"

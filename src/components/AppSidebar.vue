@@ -1,4 +1,3 @@
-
 <template>
   <v-navigation-drawer
     expand-on-hover
@@ -8,7 +7,6 @@
     color="#90CAF9"
     style="margin-top: 64px;"
   >
-     <!-- Perfil de usuario -->
     <v-list>
       <v-list-item
         prepend-avatar="https://randomuser.me/api/portraits/women/85.jpg"
@@ -19,7 +17,6 @@
 
     <v-divider></v-divider>
 
-    <!-- Navegación con tus rutas -->
     <v-list density="compact" nav>
       <v-list-item
         prepend-icon="mdi-view-dashboard"
@@ -42,7 +39,7 @@
       <v-list-item
         prepend-icon="mdi-table"
         title="Usuarios"
-        :to="{ path: '/crud' }"
+        :to="{ path: '/Usuarios' }"
         link
       />
       <v-list-item
@@ -62,6 +59,13 @@
         title="Proyectos"
         :to="{ path: '/proyectos' }"
         link
+      />
+      <v-list-item
+        prepend-icon="mdi-account-group"
+        title="Creación de Roles" :to="{ path: '/roles-crud' }" link
+      />
+      <v-list-item
+        prepend-icon="mdi-account-group-outline" title="Formularios permisos" :to="{ path: '/permisos' }" link
       />
     </v-list>
   </v-navigation-drawer>

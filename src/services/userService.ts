@@ -1,16 +1,20 @@
-// src/services/api.ts
+// src/services/userService.ts (o api.ts)
+
 const API_BASE_URL = 'http://localhost:3333'
+
 interface UsuarioData {
   nombre: string
   apellido: string
   telefono: string
   correo: string
   password: string
+  // Asegúrate de que esta interfaz también incluya rolId
+  rolId?: number | null // Es opcional si se envía o no, pero debe estar presente si se usa.
 }
 
 export async function crearUsuario(usuarioData: UsuarioData) {
   try {
-    const response = await fetch(`${API_BASE_URL}/usuarios`, {
+    const response = await fetch(`${API_BASE_URL}/api/usuarios`, { // <-- ¡CAMBIO AQUÍ!
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -32,7 +36,7 @@ export async function crearUsuario(usuarioData: UsuarioData) {
 
 export async function obtenerUsuarios() {
   try {
-    const response = await fetch(`${API_BASE_URL}/usuarios`)
+    const response = await fetch(`${API_BASE_URL}/api/usuarios`) // <-- ¡CAMBIO AQUÍ!
 
     if (!response.ok) {
       const errorData = await response.json()
@@ -48,7 +52,7 @@ export async function obtenerUsuarios() {
 
 export async function actualizarUsuario(id: number, usuarioData: Partial<UsuarioData>) {
   try {
-    const response = await fetch(`${API_BASE_URL}/usuarios/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/usuarios/${id}`, { // <-- ¡CAMBIO AQUÍ!
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -70,7 +74,7 @@ export async function actualizarUsuario(id: number, usuarioData: Partial<Usuario
 
 export async function eliminarUsuario(id: number) {
   try {
-    const response = await fetch(`${API_BASE_URL}/usuarios/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/usuarios/${id}`, { // <-- ¡CAMBIO AQUÍ!
       method: 'DELETE',
     })
 
