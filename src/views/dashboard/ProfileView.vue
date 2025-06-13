@@ -10,26 +10,27 @@
         </p>
 
         <div v-if="authStore.user" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <!-- Sección de foto de perfil -->
           <div class="profile-picture-section">
             <h3 class="text-2xl font-semibold mb-4 section-title-blue">Foto de Perfil</h3>
-            <div class="avatar-container">
+            <div class="avatar-container" @click="triggerFileInput">
               <img
-                :src="'https://i.pravatar.cc/160?img=3'" alt="Foto de Perfil"
-                class="profile-avatar"
+                :src="profilePicturePreview || authStore.user.profilePictureUrl || 'https://i.pravatar.cc/160?img=3'"
+                alt="Foto de Perfil"
                 @error="handleImageError"
               />
-              <label for="profile-picture-upload" class="upload-overlay">
+              <label class="upload-overlay">
                 <v-icon>mdi-camera</v-icon>
               </label>
-              <input
-                type="file"
-                id="profile-picture-upload"
-                ref="profilePictureInput"
-                @change="handleFileChange"
-                class="hidden-input"
-                accept="image/*"
-              />
             </div>
+            <input
+              type="file"
+              ref="profilePictureInput"
+              @change="handleFileChange"
+              class="hidden-input"
+              accept="image/*"
+              style="display:none"
+            />
             <v-btn
               v-if="selectedFile"
               @click="uploadProfilePicture"
@@ -42,20 +43,22 @@
             <p v-if="uploading" class="uploading-text">Subiendo...</p>
           </div>
 
+          <!-- Sección datos personales -->
           <div class="info-section">
             <h3 class="text-2xl font-semibold mb-4 section-title-blue">Datos Personales</h3>
             <div class="space-y-3">
-              <p><span class="font-medium info-label">Nombre Completo:</span> Juan Pérez</p>
-              <p><span class="font-medium info-label">Email:</span> juan.perez@example.com</p>
-              <p><span class="font-medium info-label">Teléfono:</span> +57 300 123 4567</p>
-              <p><span class="font-medium info-label">Creado el:</span> 15 de Enero de 2023</p>
-              <p><span class="font-medium info-label">Última Actualización:</span> 20 de Mayo de 2024</p>
+              <p><span class="font-medium info-label">Nombre Completo:</span> {{ authStore.user.nombre || 'N/A' }} {{ authStore.user.apellido || 'N/A' }} </p>
+              <p><span class="font-medium info-label">Email:</span> {{ authStore.user.correo || 'N/A' }} </p>
+              <p><span class="font-medium info-label">Teléfono:</span> {{ authStore.user.telefono || 'N/A' }} </p>
+              <p><span class="font-medium info-label">Creado el:</span> {{ formatDate(authStore.user.createdAt) }} </p>
+              <p><span class="font-medium info-label">Última Actualización:</span> {{ formatDate(authStore.user.updatedAt) }}</p>
             </div>
           </div>
 
+          <!-- Sección roles -->
           <div class="info-section">
             <h3 class="text-2xl font-semibold mb-4 section-title-green">Roles Asignados</h3>
-            <div v-if="authStore.user.roles && authStore.user.roles.length > 0">
+            <div v-if="authStore.user.roles?.length">
               <ul class="list-disc list-inside space-y-2">
                 <li v-for="role in authStore.user.roles" :key="role.id" class="info-text">
                   {{ role.nombre }}
@@ -65,6 +68,7 @@
             <p v-else class="info-text-secondary">No hay roles asignados.</p>
           </div>
 
+          <!-- Sección empresa externa o mensaje -->
           <div v-if="authStore.user.tipoUsuario === 'externo' && authStore.user.empresa" class="info-section col-span-1 md:col-span-2">
             <h3 class="text-2xl font-semibold mb-4 section-title-purple">Información de la Empresa</h3>
             <div class="space-y-3">
@@ -77,21 +81,27 @@
             <p class="info-text-secondary">No hay información de empresa disponible.</p>
           </div>
 
+          <!-- Empresa asociada -->
           <div class="info-section col-span-1 md:col-span-2">
             <h3 class="text-2xl font-semibold mb-4 section-title-yellow">Empresa Asociada</h3>
-            <p class="info-text">IngeniaCore</p> </div>
+            <p class="info-text">IngeniaCore</p>
+          </div>
 
+          <!-- Botón editar -->
           <div class="col-span-1 md:col-span-2 text-center mt-6">
             <v-btn @click="editProfile" color="blue" class="edit-button">
               <v-icon left>mdi-pencil</v-icon> Editar Perfil
             </v-btn>
           </div>
         </div>
+
+        <!-- Estado de carga -->
         <div v-else class="text-center mt-12 p-8 loading-section">
           <p class="text-xl font-semibold loading-text">Cargando información del usuario...</p>
         </div>
       </v-card-text>
     </v-card>
+
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
       {{ snackbar.message }}
       <template #actions>
@@ -104,118 +114,84 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { authSetStore } from '@/stores/AuthStore';
-import { useRouter } from 'vue-router';
-// Importa tu servicio de usuario para la carga de imágenes, o crea uno si no existe.
-// Ejemplo: import { uploadProfileImage } from '@/services/userService';
+import { uploadFile } from '@/services/uploadService';
 
 const authStore = authSetStore();
-const router = useRouter();
 
-// Estado para la carga de fotos de perfil
-const profilePictureInput = ref<HTMLInputElement | null>(null);
-const selectedFile = ref<File | null>(null);
-const profilePicturePreview = ref<string | null>(null);
+const profilePictureInput = ref<HTMLInputElement|null>(null);
+const selectedFile = ref<File|null>(null);
+const profilePicturePreview = ref<string|null>(null);
 const uploading = ref(false);
 
-// Estado para el Snackbar
-const snackbar = ref({
-  show: false,
-  message: '',
-  color: 'success',
-});
+const snackbar = ref({ show: false, message: '', color: 'success' });
 
-onMounted(async () => {
-  // Asegúrate de que el usuario esté cargado en el store al montar el componente
-  await authStore.checkAuth();
-});
+onMounted(() => authStore.checkAuth());
 
 const formatDate = (dateString: string) => {
   if (!dateString) return 'N/A';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  const d = new Date(dateString);
+  return d.toLocaleDateString('es-ES', {
+    year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit'
   });
 };
 
-const handleFileChange = (event: Event) => {
-  const input = event.target as HTMLInputElement;
-  if (input.files && input.files[0]) {
-    selectedFile.value = input.files[0];
+const handleImageError = (e: Event) => {
+  (e.target as HTMLImageElement).src = 'https://i.pravatar.cc/160?img=3';
+};
+
+const triggerFileInput = () => {
+  profilePictureInput.value?.click();
+};
+
+const handleFileChange = (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0] ?? null;
+  selectedFile.value = file;
+  if (file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
-      profilePicturePreview.value = e.target?.result as string;
-    };
-    reader.readAsDataURL(selectedFile.value);
+    reader.onload = () => profilePicturePreview.value = reader.result as string;
+    reader.readAsDataURL(file);
   } else {
-    selectedFile.value = null;
     profilePicturePreview.value = null;
   }
 };
 
 const uploadProfilePicture = async () => {
-  if (!selectedFile.value || !authStore.user?.id) {
+  if (!selectedFile.value) {
     snackbar.value = { show: true, message: 'Por favor, selecciona una imagen primero.', color: 'warning' };
     return;
   }
-
   uploading.value = true;
   try {
-    const formData = new FormData();
-    formData.append('profile_picture', selectedFile.value);
-    
-    // --- Llama a tu servicio para subir la imagen ---
-    // Necesitarás implementar esta función en un archivo de servicio (ej. userService.ts)
-    // que haga una petición POST/PUT a tu backend con el FormData.
-    // El backend debería devolver la nueva URL de la imagen.
-    // Ejemplo de cómo podría ser:
-    // const response = await uploadProfileImage(authStore.user.id, formData);
-    
-    // --- Mock de respuesta para desarrollo (eliminar en producción) ---
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simula una carga
-    const mockResponse = { profilePictureUrl: 'https://i.pravatar.cc/160?img=' + Math.floor(Math.random() * 70) };
-    // --- Fin Mock ---
-
-    // if (response && response.profilePictureUrl) { // Usar esto con tu servicio real
-    if (mockResponse && mockResponse.profilePictureUrl) { // Usar esto con el mock
-      // Actualiza la URL de la foto de perfil en el store del usuario
-      // Asegúrate de que tu AuthStore.ts tenga una forma de actualizar el user.profilePictureUrl
-      if (authStore.user) {
-        authStore.user.profilePictureUrl = mockResponse.profilePictureUrl;
-        // Opcional: Actualizar localStorage si el store no lo hace automáticamente
-        // localStorage.setItem('user', JSON.stringify(authStore.user));
-      }
-      snackbar.value = { show: true, message: 'Foto de perfil actualizada exitosamente.', color: 'success' };
-      selectedFile.value = null; // Limpiar el archivo seleccionado
-      profilePicturePreview.value = null; // Limpiar la previsualización
-    } else {
-      throw new Error('La respuesta de la subida no contiene la URL de la imagen.');
-    }
-  } catch (error: any) {
-    console.error('Error al subir la foto de perfil:', error);
-    snackbar.value = { show: true, message: error.message || 'Error al subir la foto de perfil.', color: 'error' };
+    const uploaded = await uploadFile(selectedFile.value);
+    if (!uploaded?.url || !authStore.user) throw new Error('Error subiendo imagen.');
+    const res = await fetch('http://localhost:3333/usuarios/profile-picture-url', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authStore.token}`,
+      },
+      body: JSON.stringify({ userId: authStore.user.id, url: uploaded.url }),
+    });
+    if (!res.ok) throw new Error('Error guardando URL en DB.');
+    authStore.user.profilePictureUrl = uploaded.url;
+    localStorage.setItem('user', JSON.stringify(authStore.user));
+    snackbar.value = { show: true, message: 'Foto de perfil actualizada correctamente.', color: 'success' };
+  } catch (err) {
+    console.error(err);
+    snackbar.value = { show: true, message: 'Error al subir o guardar la foto.', color: 'error' };
   } finally {
     uploading.value = false;
+    selectedFile.value = null;
+    profilePicturePreview.value = null;
   }
 };
 
-const handleImageError = (event: Event) => {
-  // En caso de que la URL de la imagen no cargue, muestra una imagen de placeholder
-  const imgElement = event.target as HTMLImageElement;
-  imgElement.src = 'https://placehold.co/160x160/FF5252/ffffff?text=Error';
-};
-
 const editProfile = () => {
-  router.push('/settings'); // Redirige a la ruta /settings
+  // Lógica para editar perfil
 };
 </script>
-
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 /* Estilos para el contenedor principal de la tarjeta */
 .profile-card {
   max-width: 1000px; /* Tamaño más grande */
@@ -437,3 +413,5 @@ const editProfile = () => {
   margin-right: 0.5rem;
 }
 </style>
+
+
