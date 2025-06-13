@@ -16,23 +16,6 @@ export async function uploadFile(file: File) {
   const data = await response.json()
   return data // Aquí debería venir { url: 'https://...' }
 }
-// Define the file variable before using it
-const file = new File([""], "filename.txt"); // Replace with actual file initialization
-const {url} = await uploadFile(file)
+// Replace with actual file initialization
 
-console.log('📸 URL subida:', url)
 
-console.log('Enviando al backend la URL:', url)
-
-// Ahora le dices al backend: guarda esta URL como foto de perfil
-await fetch('http://localhost:3333/usuarios/profile-picture-url', {
-  method: 'PUT',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  //credentials: 'include', // si usas sesión, sino puedes quitarlo
-  body: JSON.stringify({
-    userId: 'el-id-del-usuario', // ¡debes pasar el ID del usuario!
-    url,
-  }),
-})
