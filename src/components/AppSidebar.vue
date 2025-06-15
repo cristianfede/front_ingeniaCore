@@ -67,6 +67,16 @@
       <v-list-item
         prepend-icon="mdi-account-group-outline" title="Formularios permisos" :to="{ path: '/permisos' }" link
       />
+      <v-list-item
+        prepend-icon="mdi-history"
+        title="history"
+        :to="{ path: '/historial-tickets' }"
+        link/>
+      <v-list-item
+        prepend-icon="mdi-history"
+        title="Notificaciones"
+        :to="{ path: '/Notificaciones'}"
+        link/>
     </v-list>
   </v-navigation-drawer>
 </template>

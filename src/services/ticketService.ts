@@ -60,6 +60,7 @@ export async function crearTicket(ticketData: FormData) {
  */
 
 export async function obtenerTickets() {
+
   try {
     const response = await fetch(`${API_BASE_URL}/tickets`)
 
@@ -94,6 +95,12 @@ export async function obtenerTickets() {
 
 export async function actualizarTicket(id: number, ticketData: FormData) {
   try {
+    const authStore = authSetStore()
+    const user = authStore.user.id
+
+    // ✅ Agregamos el usuario_id al FormData
+    ticketData.append('usuario_id', user.toString())
+
     const response = await fetch(`${API_BASE_URL}/tickets/${id}`, {
       method: 'PATCH',
 
@@ -351,3 +358,47 @@ export async function obtenerServicios() {
     throw error
   }
 }
+
+export async function enviarComentario(ticketId: number, usuarioId: number, comentario: string) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/tickets/${ticketId}/comentarios`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        usuarioId,
+        comentario,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || 'Error al guardar comentario')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error en ticketService (enviarComentario):', error)
+    throw error
+  }
+}
+
+export async function obtenerTrazabilidadTicket(ticketId: number) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/tickets/${ticketId}/trazabilidad`)
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      const errorMessage =
+        errorData.message || errorData.error || errorData.mensaje || 'Error al obtener trazabilidad del ticket'
+      throw new Error(errorMessage)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error en ticketService (obtenerTrazabilidadTicket):', error)
+    throw error
+  }
+}
+

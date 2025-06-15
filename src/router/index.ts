@@ -13,9 +13,11 @@ import FormularioUsuarios from '@/views/FormularioUsuarios.vue'
 import TicketsView from '../views/TicketsView.vue'
 import FormularioEmpresasView from '../views/FormularioEmpresasView.vue'
 import FormulariosProyectos from '@/views/FormulariosProyectos.vue'
-// Importa ambos componentes de roles
-import FormularioPermisosView from '@/views/FormularioPermisosView.vue' // Tu componente original
-import CreacionRoles from "@/views/CreacionRoles.vue"           // Tu nuevo componente CRUD de roles
+import FormularioPermisosView from '@/views/FormularioPermisosView.vue'
+import CreacionRoles from '@/views/CreacionRoles.vue'
+import HistorialTicketsView from '@/views/HistorialTicketsView.vue'
+import TicketDetalleView from '@/views/TicketDetalleView.vue'
+import NotificacionesView from '@/views/NotificacionesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -25,19 +27,16 @@ const router = createRouter({
       name: 'home',
       component: HomeView,
     },
-
     {
       path: '/login',
       component: LoginView,
       meta: { layout: 'AuthLayout' },
     },
-
     {
       path: '/reset-password',
       component: ResetPasswordView,
       meta: { layout: 'AuthLayout' },
     },
-
     {
       path: '/register',
       component: RegisterView,
@@ -48,13 +47,11 @@ const router = createRouter({
       component: DashboardView,
       meta: { layout: 'MainLayout', requiresAuth: true },
     },
-
     {
       path: '/settings',
       component: SettingsView,
       meta: { layout: 'MainLayout' },
     },
-
     {
       path: '/profile',
       component: ProfileView,
@@ -65,7 +62,6 @@ const router = createRouter({
       component: FormularioUsuarios,
       meta: { layout: 'MainLayout' },
     },
-
     {
       path: '/tickets',
       name: 'tickets',
@@ -84,35 +80,49 @@ const router = createRouter({
       component: FormulariosProyectos,
       meta: { layout: 'MainLayout' },
     },
-    // ====================================================================
-    // RUTAS PARA ROLES (AHORA SEPARADAS)
-    // ====================================================================
     {
-      // Ruta para tu vista original de "Formularios Roles"
-      path: '/permisos', // Mantiene la ruta original con 'R' mayúscula
+      path: '/permisos',
       name: 'FormularioPermisos',
-      component: FormularioPermisosView, // Apunta al componente original
+      component: FormularioPermisosView,
       meta: { layout: 'MainLayout' },
     },
     {
-      // Ruta para el CRUD de Roles (la vista que creamos)
-      path: '/roles-crud', // ¡NUEVA RUTA ÚNICA para el CRUD de Roles!
-      name: 'RolesCrudList', // Nombre para la lista de roles del CRUD
-      component: CreacionRoles, // Apunta a tu nuevo componente CRUD
+      path: '/roles-crud',
+      name: 'RolesCrudList',
+      component: CreacionRoles,
       meta: { layout: 'MainLayout' },
     },
     {
-      // Ruta para la edición del CRUD de Roles
-      path: '/roles-crud/editar/:id', // Ruta para editar un rol específico del CRUD
-      name: 'RolesCrudEdit', // Nombre para la edición de roles del CRUD
-      component: CreacionRoles, // Reutiliza el mismo componente CRUD
-      props: true, // Pasa el ':id' de la ruta como una prop al componente
+      path: '/roles-crud/editar/:id',
+      name: 'RolesCrudEdit',
+      component: CreacionRoles,
+      props: true,
       meta: { layout: 'MainLayout' },
     },
-    // ====================================================================
-
-    { path: '/new-password', component: NewPasswordView, meta: { layout: 'AuthLayout' } },
-  ],
+    {
+      path: '/historial-tickets',
+      name: 'HistorialTickets',
+      component: HistorialTicketsView,
+      meta: { layout: 'MainLayout' },
+    },
+    {
+      path: '/tickets/:id',
+      name: 'detalle-ticket',
+      component: TicketDetalleView,
+      meta: { layout: 'MainLayout' },
+    },
+    {
+      path: '/new-password',
+      component: NewPasswordView,
+      meta: { layout: 'AuthLayout' },
+    },
+    {
+      path: '/Notificaciones',
+      name: 'Notificaciones',
+      component: NotificacionesView,
+      meta: { layout: 'MainLayout' },
+    },
+  ]
 })
 
 router.beforeEach((to, from, next) => {
@@ -125,4 +135,5 @@ router.beforeEach((to, from, next) => {
     next()
   }
 })
+
 export default router
