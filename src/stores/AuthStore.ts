@@ -72,11 +72,15 @@ export const authSetStore = defineStore('auth', {
             console.error('checkAuth: No se pudo obtener la información del usuario o token inválido.')
             this.logout()
           }
-        } catch (error: any) {
-          console.error(
-            'checkAuth: Error al verificar autenticación:',
-            error.response?.data?.message || error.message
-          )
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            console.error(
+              'checkAuth: Error al verificar autenticación:',
+              (error as { response?: { data?: { message?: string } } })?.response?.data?.message || error.message
+            )
+          } else {
+            console.error('checkAuth: Error desconocido:', error)
+          }
           this.logout()
         }
       } else if (this.token && this.user) {
