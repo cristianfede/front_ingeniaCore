@@ -184,10 +184,10 @@ sortByIdDesc(); // Por defecto, mostrar los más recientes
 
 // Filtrar proyectos por búsqueda
 const filteredProyectos = computed(() =>
-proyectos.value.filter(p =>
- p.nombre.toLowerCase().includes(search.value.toLowerCase()) ||
-p.empresa.nombre.toLowerCase().includes(search.value.toLowerCase()) // También buscar por nombre de empresa
-)
+  proyectos.value.filter(p =>
+    (p.nombre?.toLowerCase()?.includes(search.value.toLowerCase()) || false) ||
+    (p.empresa?.nombre?.toLowerCase()?.includes(search.value.toLowerCase()) || false)
+  )
 );
 
 // Funciones para ordenar la tabla
