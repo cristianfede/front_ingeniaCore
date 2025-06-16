@@ -246,12 +246,16 @@ const editProfile = () => {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
   margin-bottom: 20px;
   cursor: pointer;
+  background-color: #f0f0f0; /* Fondo gris claro para cuando la imagen no llena el espacio */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .profile-avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* Ajusta la imagen dentro sin recortarla */
   display: block;
 }
 
