@@ -41,13 +41,13 @@
           link
         />
         <v-list-item
-          prepend-icon="mdi-account-group"
+          prepend-icon="mdi-account-cog"
           title="Roles"
           :to="{ path: '/roles-crud' }"
           link
         />
         <v-list-item
-          prepend-icon="mdi-account-group-outline"
+          prepend-icon="mdi-shield-account"
           title="Permisos"
           :to="{ path: '/permisos' }"
           link
@@ -64,7 +64,7 @@
         </template>
 
         <v-list-item
-          prepend-icon="mdi-ticket"
+          prepend-icon="mdi-ticket-confirmation"
           title="Crear"
           :to="{ path: '/tickets' }"
           link
@@ -78,7 +78,7 @@
       </v-list-group>
 
       <v-list-item
-        prepend-icon="mdi-table"
+        prepend-icon="mdi-account-multiple"
         title="Usuarios"
         :to="{ path: '/Usuarios' }"
         link
@@ -90,13 +90,13 @@
         link
       />
       <v-list-item
-        prepend-icon="mdi-domain"
+        prepend-icon="mdi-folder-multiple"
         title="Proyectos"
         :to="{ path: '/proyectos' }"
         link
       />
       <v-list-item
-        prepend-icon="mdi-history"
+        prepend-icon="mdi-bell"
         title="Notificaciones"
         :to="{ path: '/Notificaciones' }"
         link
