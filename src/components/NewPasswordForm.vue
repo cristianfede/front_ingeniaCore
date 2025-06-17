@@ -1,66 +1,125 @@
 <template>
   <form @submit.prevent="changePassword" class="reset-form">
-    <h2>New Password</h2>
+    <h2>Nueva Contraseña</h2>
 
     <div class="input-group">
-      <label for="newPassword">Reset Password</label>
+      <label for="newPassword">Contraseña nueva</label>
       <input
         type="password"
         id="newPassword"
         v-model="newPassword"
         required
-        placeholder="Enter your new password"
+        placeholder="Ingresa tu nueva contraseña"
       />
     </div>
 
     <div class="input-group">
-      <label for="confirmPassword">Confirm Password</label>
+      <label for="confirmPassword">Confirmar contraseña</label>
       <input
         type="password"
         id="confirmPassword"
         v-model="confirmPassword"
         required
-        placeholder="Confirm your new password"
+        placeholder="Confirma tu nueva contraseña"
       />
     </div>
 
-    <button type="submit">Change Password</button>
+    <button type="submit" :disabled="loading">
+      {{ loading ? 'Cambiando...' : 'Cambiar Contraseña' }}
+    </button>
 
-    <p v-if="message" class="message">{{ message }}</p>
+    <p v-if="message" :class="messageClass">{{ message }}</p>
 
-    <router-link to="/login" class="login-again">Log in again</router-link>
+    <!-- Solo se mostrará si el cambio fue exitoso, y el usuario hace clic para ir a login -->
+    <router-link v-if="success" to="/login" class="login-again">
+      Iniciar sesión
+    </router-link>
   </form>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+// Obtenemos token desde la URL: /new-password/:token
+const route = useRoute()
+const router = useRouter()
+const token = (route.params.token as string) || ''
 
 const newPassword = ref('')
 const confirmPassword = ref('')
 const message = ref('')
+const loading = ref(false)
+const success = ref(false)
 
-const changePassword = () => {
+const messageClass = computed(() => {
+  return success.value ? 'message-success' : 'message-error'
+})
+
+const changePassword = async () => {
+  // Validaciones básicas
   if (newPassword.value.length < 8) {
     message.value = 'La contraseña debe tener al menos 8 caracteres.'
+    success.value = false
     return
   }
 
   if (newPassword.value !== confirmPassword.value) {
-    message.value = 'Passwords do not match.'
+    message.value = 'Las contraseñas no coinciden.'
+    success.value = false
     return
   }
 
-  message.value = 'Your password has been changed successfully.'
+  loading.value = true
+  message.value = ''
+  success.value = false
+
+  try {
+    const response = await fetch('http://localhost:3333/reset-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        token,
+        password: newPassword.value,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      // Si el backend devuelve 400/500, mostramos error
+      message.value = data.message || 'Ocurrió un error al cambiar la contraseña.'
+      success.value = false
+    } else {
+      // Éxito: password actualizada
+      message.value = data.message || 'Contraseña cambiada con éxito.'
+      success.value = true
+
+      // Después de 1.5 segundos redirigimos a /login
+      setTimeout(() => {
+        router.push('/login')
+      }, 1500)
+    }
+  } catch (err) {
+    message.value = 'Error de conexión con el servidor.'
+    success.value = false
+    console.error('Error en changePassword fetch:', err)
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
 <style scoped>
 .reset-form {
-  background: rgba(255, 255, 255, 0.2); /* Fondo semi-transparente */
+  background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(10px);
   padding: 20px;
   border-radius: 12px;
   max-width: 400px;
+  margin: 0 auto;
   text-align: center;
   color: white;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -100,16 +159,28 @@ button {
   font-weight: bold;
   color: white;
   transition: 0.3s ease-in-out;
+  margin-top: 10px;
 }
 
-button:hover {
+button[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button:hover:not([disabled]) {
   background: rgba(255, 255, 255, 0.5);
 }
 
-.message {
+.message-success {
   margin-top: 10px;
   font-size: 14px;
-  color: #ffeb3b;
+  color: #a5d6a7; /* verde claro para éxito */
+}
+
+.message-error {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #ff8a80; /* rojo claro para error */
 }
 
 .login-again {

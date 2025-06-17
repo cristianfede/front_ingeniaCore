@@ -112,7 +112,7 @@ const router = createRouter({
       meta: { layout: 'MainLayout' },
     },
     {
-      path: '/new-password',
+      path: '/new-password:token',
       component: NewPasswordView,
       meta: { layout: 'AuthLayout' },
     },
