@@ -9,7 +9,7 @@
   >
     <v-list>
       <v-list-item
-        prepend-avatar="https://randomuser.me/api/portraits/women/85.jpg"
+        :prepend-avatar="auth.user?.profilePictureUrl || 'https://i.pravatar.cc/160?img=3'"
         :subtitle="auth.user?.correo"
         :title="auth.user?.nombre"
       />

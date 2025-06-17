@@ -15,6 +15,7 @@
             <h3 class="text-2xl font-semibold mb-4 section-title-blue">Foto de Perfil</h3>
             <div class="avatar-container" @click="triggerFileInput">
               <img
+                class="profile-avatar"
                 :src="profilePicturePreview || authStore.user.profilePictureUrl || 'https://i.pravatar.cc/160?img=3'"
                 alt="Foto de Perfil"
                 @error="handleImageError"
@@ -23,6 +24,10 @@
                 <v-icon>mdi-camera</v-icon>
               </label>
             </div>
+
+            <p v-if="validationError" class="text-center text-red-500 text-sm mt-2">
+              {{ validationError }}
+            </p>
             <input
               type="file"
               ref="profilePictureInput"
@@ -56,17 +61,14 @@
           </div>
 
           <!-- Sección roles -->
-          <div class="info-section">
-            <h3 class="text-2xl font-semibold mb-4 section-title-green">Roles Asignados</h3>
-            <div v-if="authStore.user.roles?.length">
-              <ul class="list-disc list-inside space-y-2">
-                <li v-for="role in authStore.user.roles" :key="role.id" class="info-text">
-                  {{ role.nombre }}
-                </li>
-              </ul>
+            <div class="info-section col-span-1 md:col-span-2">
+              <h3 class="text-2xl font-semibold mb-4 section-title-green">Rol Asignado</h3>
+              <div v-if="authStore.user.role" class="role-badge">
+                {{ authStore.user.role.nombre }}
+              </div>
+              <p v-else class="info-text-secondary text-center">No hay rol asignado.</p>
             </div>
-            <p v-else class="info-text-secondary">No hay roles asignados.</p>
-          </div>
+
 
           <!-- Sección empresa externa o mensaje -->
           <div v-if="authStore.user.tipoUsuario === 'externo' && authStore.user.empresa" class="info-section col-span-1 md:col-span-2">
@@ -87,12 +89,6 @@
             <p class="info-text">IngeniaCore</p>
           </div>
 
-          <!-- Botón editar -->
-          <div class="col-span-1 md:col-span-2 text-center mt-6">
-            <v-btn @click="editProfile" color="blue" class="edit-button">
-              <v-icon left>mdi-pencil</v-icon> Editar Perfil
-            </v-btn>
-          </div>
         </div>
 
         <!-- Estado de carga -->
@@ -118,6 +114,7 @@ import { uploadFile } from '@/services/uploadService';
 
 const authStore = authSetStore();
 
+const validationError = ref<string | null>(null);
 const profilePictureInput = ref<HTMLInputElement|null>(null);
 const selectedFile = ref<File|null>(null);
 const profilePicturePreview = ref<string|null>(null);
@@ -141,18 +138,48 @@ const handleImageError = (e: Event) => {
 };
 
 const triggerFileInput = () => {
+  validationError.value = null;
   profilePictureInput.value?.click();
 };
 
 const handleFileChange = (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0] ?? null;
-  selectedFile.value = file;
+
+  selectedFile.value = null;
+  profilePicturePreview.value = null;
+  validationError.value = null;
+
   if (file) {
+    const maxSizeInBytes = 2 * 1024 * 1024; // 2 MB
+    if (file.size > maxSizeInBytes) {
+      validationError.value = 'El tamaño máximo permitido es de 2 MB.';
+      profilePictureInput.value!.value = '';
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onload = () => profilePicturePreview.value = reader.result as string;
+    reader.onload = () => {
+      const img = new Image();
+      img.src = reader.result as string;
+
+      img.onload = () => {
+        const width = img.width;
+        const height = img.height;
+        const aspectRatio = width / height;
+
+        const lowerBound = 0.95;
+        const upperBound = 1.05;
+
+        if (aspectRatio >= lowerBound && aspectRatio <= upperBound) {
+          selectedFile.value = file;
+          profilePicturePreview.value = reader.result as string;
+        } else {
+          validationError.value = 'Solo se permiten imágenes cuadradas (proporción 1:1, (400x400 px) máximo 2 MB)';
+          profilePictureInput.value!.value = '';
+        }
+      };
+    };
     reader.readAsDataURL(file);
-  } else {
-    profilePicturePreview.value = null;
   }
 };
 
@@ -184,11 +211,9 @@ const uploadProfilePicture = async () => {
     uploading.value = false;
     selectedFile.value = null;
     profilePicturePreview.value = null;
-  }
-};
+    validationError.value = null;
 
-const editProfile = () => {
-  // Lógica para editar perfil
+  }
 };
 </script>
 <style scoped>
@@ -246,14 +271,23 @@ const editProfile = () => {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
   margin-bottom: 20px;
   cursor: pointer;
+  background-color: #f0f0f0; /* Fondo gris claro para cuando la imagen no llena el espacio */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .profile-avatar {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* esto hace que la imagen se recorte pero llene el círculo */
+  object-position: center; /* centra la imagen */
+  border-radius: 50%; /* por si falta, asegura que el img también sea circular */
   display: block;
 }
+
+
+
 
 .upload-overlay {
   position: absolute;
@@ -302,7 +336,7 @@ const editProfile = () => {
 }
 
 .section-title-green {
-  color: #4CAF50; /* Verde de Vuetify para títulos de sección */
+  color: #020202; /* Verde de Vuetify para títulos de sección */
   font-family: 'Inter', sans-serif;
   font-weight: 600;
   text-align: center;
@@ -412,6 +446,35 @@ const editProfile = () => {
 .fa-edit {
   margin-right: 0.5rem;
 }
+
+/* Estilos compartidos para cuadros */
+.shared-box {
+  margin-top: 20px; /* Espaciado */
+  text-align: center; /* Centra el texto */
+  background-color: #f9f9f9; /* Fondo claro */
+  padding: 10px 20px; /* Espaciado interno */
+  border-radius: 5px; /* Bordes redondeados */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Sombra suave */
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 12px 24px;
+  background: linear-gradient(to right, #0e5cc2, #134d74);
+  color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
+  border-radius: 30px;
+  text-align: center;
+  margin: 0 auto;
+  box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4);
+  transition: transform 0.3s ease;
+}
+
+.role-badge:hover {
+  transform: scale(1.05);
+}
+
 </style>
 
 
