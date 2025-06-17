@@ -93,50 +93,34 @@
                 </v-col>
             </v-row>
       <v-data-table
-        :search="search" :headers="headersAsignaciones"
-        :items="groupedAssignments"
-        item-value="id"
-        v-model:sort-by="sortBy"
-        :loading="cargandoAsignaciones"
-        loading-text="Cargando..."
-        no-data-text="No hay asignaciones"
-        class="elevation-1"
+  :headers="headersAsignaciones"
+  :items="filteredAsignaciones"
+  item-value="id"
+  v-model:sort-by="sortBy"
+  :loading="cargandoAsignaciones"
+  loading-text="Cargando..."
+  no-data-text="No hay asignaciones"
+  class="elevation-1"
+>
+  <template v-slot:[`item.permisosAgrupados`]="{ item }">
+    <div v-if="item.permisosAgrupados && item.permisosAgrupados.length > 0">
+      {{ item.permisosAgrupados.map(permiso => permiso.nombre).join(', ') }}
+    </div>
+    <div v-else>
+      N/A
+    </div>
+  </template>
 
-      >
-        <template v-slot:item.permisosAgrupados="{ item }">
-          <div v-if="item.permisosAgrupados && item.permisosAgrupados.length > 0">
-          {{ item.permisosAgrupados.map(permiso => permiso.nombre).join(', ') }}
-          </div>
-          <div v-else>
-            N/A </div>
-        </template>
-        <!--<template v-slot:item.permisosAgrupados="{ item }">
-          <template v-if="item.raw && Array.isArray(item.raw.permisosAgrupados)">
-            <v-chip
-              v-for="permisoObj in item.raw.permisosAgrupados"
-              :key="permisoObj.id"
-              class="ma-1"
-              color="blue-grey-lighten-4"
-              density="comfortable"
-            >
-              {{ permisoObj.nombre }}
-            </v-chip>
-          </template>
-          <template v-else>
-            <span>N/A</span>
-          </template>
-        </template>-->
-
-        <template v-slot:item.actions="{ item }">
-          <v-btn icon class="mr-2" @click="editAssignment(item)">
-            <v-icon :color="selectedAssignmentId === item.id ? 'primary' : 'blue'">mdi-pencil</v-icon>
-          </v-btn>
-          <v-btn icon @click="eliminarAsignacion(item)">
-            <v-icon color="red">mdi-delete</v-icon>
-          </v-btn>
-        </template>
-      </v-data-table>
-    </v-card>
+  <template v-slot:item.actions="{ item }">
+    <v-btn icon class="mr-2" @click="editAssignment(item)">
+      <v-icon :color="selectedAssignmentId === item.id ? 'primary' : 'blue'">mdi-pencil</v-icon>
+    </v-btn>
+    <v-btn icon @click="eliminarAsignacion(item)">
+      <v-icon color="red">mdi-delete</v-icon>
+    </v-btn>
+  </template>
+</v-data-table>
+ </v-card>
 
     <v-snackbar
       v-model="snackbar.show"
@@ -212,6 +196,21 @@ const showConfirmDialog = ref(false);
 const itemToConfirm = ref<any>(null);
 const dialogAction = ref<'update' | 'delete' | 'assign' | ''>('');
 const formularioAsignacion = ref<any>(null);
+
+const filteredAsignaciones = computed(() => {
+  const searchTerm = search.value.trim().toLowerCase();
+
+  return groupedAssignments.value.filter((item) => {
+    return (
+      item.rolNombre.toLowerCase().includes(searchTerm) ||
+      item.itemNombre.toLowerCase().includes(searchTerm) ||
+      item.permisosAgrupados.some((permiso) =>
+        permiso.nombre.toLowerCase().includes(searchTerm)
+      )
+    );
+  });
+});
+
 
 const sortByIdAsc = () => {
     sortBy.value = [{ key: 'id', order: 'asc' }];
