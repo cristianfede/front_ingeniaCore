@@ -39,44 +39,24 @@
           </v-col>
         </v-row>
 
-        <v-row class="mb-8">
-          <v-col cols="12" md="6">
+        <v-row class="mb-8 justify-center">
+          <v-col cols="12" md="8">
             <v-card class="section-card" elevation="2">
               <v-card-title class="text-h5 section-title-blue">Actividad Reciente</v-card-title>
               <v-card-text>
                 <v-list dense v-if="actividadReciente.length">
                   <v-list-item v-for="item in actividadReciente" :key="item.id">
                     <v-list-item-title>{{ item.evento }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ item.fecha }} - {{ item.asignadoA }}</v-list-item-subtitle>
+                    <v-list-item-subtitle>{{ item.fecha }} - {{ item.asignadoA || 'N/A' }}</v-list-item-subtitle>
                   </v-list-item>
                 </v-list>
                 <p v-else class="text-center text-grey">No hay actividad reciente.</p>
               </v-card-text>
             </v-card>
           </v-col>
-          <v-col cols="12" md="6">
-            <v-card class="section-card" elevation="2">
-              <v-card-title class="text-h5 section-title-green">Tareas Pendientes</v-card-title>
-              <v-card-text>
-                <v-list dense v-if="tareasPendientes.length">
-                  <v-list-item v-for="item in tareasPendientes" :key="item.id">
-                    <v-list-item-title>{{ item.titulo }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ item.detalle }}</v-list-item-subtitle>
-                  </v-list-item>
-                </v-list>
-                <p v-else class="text-center text-grey">No hay tareas pendientes.</p>
-              </v-card-text>
-            </v-card>
-          </v-col>
         </v-row>
 
-        <div class="text-center mt-10">
-          <v-btn color="blue-darken-2" size="large" class="explore-button">
-            Explorar Reportes Completos
-            <v-icon end>mdi-arrow-right</v-icon>
-          </v-btn>
-        </div>
-      </v-card-text>
+        </v-card-text>
       <v-overlay :model-value="loading" class="align-center justify-center">
         <v-progress-circular
           color="primary"
@@ -97,75 +77,65 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'; // Importa 'ref' para variables reactivas
+import { onMounted, ref } from 'vue';
 import { authSetStore } from '@/stores/AuthStore';
 
 // Define la URL base de tu API de AdonisJS
-const API_BASE_URL = 'http://localhost:3333/api'; // <-- ASEGÚRATE DE QUE ESTA URL SEA CORRECTA PARA TU BACKEND
+const API_BASE_URL = 'http://localhost:3333/api';
 
 const authStore = authSetStore();
 
 // Variables reactivas para almacenar los datos del dashboard
-const metrics = ref({ // Inicializa con valores por defecto
+const metrics = ref({
   ticketsAbiertos: 0,
   ticketsCerradosMes: 0,
   nuevosUsuarios: 0,
 });
-const actividadReciente = ref<any[]>([]); // Array vacío para la actividad
-const tareasPendientes = ref<any[]>([]); // Array vacío para las tareas
-const loading = ref(false); // Estado de carga
-const error = ref<string | null>(null); // Mensaje de error
+const actividadReciente = ref<any[]>([]);
+const loading = ref(false);
+const error = ref<string | null>(null);
 
 const fetchDashboardData = async () => {
-  loading.value = true; // Activa el estado de carga
-  error.value = null; // Limpia errores previos
+  loading.value = true;
+  error.value = null;
 
   try {
-    const token = authStore.token; // Obtiene el token de autenticación del store
+    const token = authStore.token;
 
-    const headers: HeadersInit = { // Usa HeadersInit para las cabeceras de fetch
+    const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
 
-    // Si la ruta del dashboard en AdonisJS está protegida (como acordamos),
-    // es crucial enviar el token en la cabecera Authorization.
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    // Realiza la petición GET a tu API de AdonisJS usando fetch
     const response = await fetch(`${API_BASE_URL}/dashboard`, {
       method: 'GET',
       headers: headers,
     });
 
-    // Manejo de errores HTTP en fetch
     if (!response.ok) {
-      const errorData = await response.json(); // Intenta leer el mensaje de error del servidor
+      const errorData = await response.json();
       throw new Error(`Error: ${response.status} - ${errorData.message || 'Error en la respuesta del servidor'}`);
     }
 
-    const data = await response.json(); // Parsea la respuesta JSON
+    const data = await response.json();
 
-    // Verifica si la respuesta contiene datos y actualiza las variables reactivas
     if (data) {
       metrics.value = data.metrics;
       actividadReciente.value = data.actividadReciente;
-      tareasPendientes.value = data.tareasPendientes;
     }
   } catch (err: any) {
     console.error('Error fetching dashboard data:', err);
-    // Errores de red o errores lanzados desde 'throw new Error'
     error.value = `Error al cargar datos: ${err.message || 'Ocurrió un error desconocido'}`;
   } finally {
-    loading.value = false; // Desactiva el estado de carga al finalizar (éxito o error)
+    loading.value = false;
   }
 };
 
 onMounted(async () => {
-  // Primero, asegúrate de que la información del usuario (y el token) estén cargados en el store.
   await authStore.checkAuth();
-  // Luego, carga los datos del dashboard desde la API.
   await fetchDashboardData();
 });
 </script>
@@ -226,7 +196,7 @@ onMounted(async () => {
   font-size: 0.9rem;
 }
 
-/* Estilos para las tarjetas de sección (Actividad Reciente, Tareas Pendientes) */
+/* Estilos para las tarjetas de sección (Actividad Reciente) */
 .section-card {
   background-color: #F5F5F5;
   border-radius: 8px;
@@ -246,13 +216,6 @@ onMounted(async () => {
   margin-bottom: 15px;
 }
 
-.section-title-green {
-  color: #4CAF50;
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  margin-bottom: 15px;
-}
-
 /* Estilos para los elementos de lista dentro de las secciones */
 .v-list-item-title {
   font-family: 'Inter', sans-serif;
@@ -266,8 +229,8 @@ onMounted(async () => {
   font-size: 0.85rem;
 }
 
-/* Estilo para el botón de explorar */
-.explore-button {
+/* El estilo para el botón de explorar ya no es necesario */
+/* .explore-button {
   font-family: 'Inter', sans-serif;
   font-weight: 600;
   text-transform: none;
@@ -280,7 +243,7 @@ onMounted(async () => {
 .explore-button:hover {
   transform: translateY(-2px);
   background-color: #1565C0 !important;
-}
+} */
 
 /* Clases de utilidad de Vuetify y Tailwind (asegúrate de que Tailwind esté configurado) */
 .py-5 { padding-top: 1.25rem; padding-bottom: 1.25rem; }

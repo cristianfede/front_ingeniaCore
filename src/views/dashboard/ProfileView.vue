@@ -10,7 +10,6 @@
         </p>
 
         <div v-if="authStore.user" class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <!-- Sección de foto de perfil -->
           <div class="profile-picture-section">
             <h3 class="text-2xl font-semibold mb-4 section-title-blue">Foto de Perfil</h3>
             <div class="avatar-container" @click="triggerFileInput">
@@ -28,6 +27,7 @@
             <p v-if="validationError" class="text-center text-red-500 text-sm mt-2">
               {{ validationError }}
             </p>
+
             <input
               type="file"
               ref="profilePictureInput"
@@ -48,7 +48,6 @@
             <p v-if="uploading" class="uploading-text">Subiendo...</p>
           </div>
 
-          <!-- Sección datos personales -->
           <div class="info-section">
             <h3 class="text-2xl font-semibold mb-4 section-title-blue">Datos Personales</h3>
             <div class="space-y-3">
@@ -63,14 +62,17 @@
           <!-- Sección roles -->
             <div class="info-section col-span-1 md:col-span-2">
               <h3 class="text-2xl font-semibold mb-4 section-title-green">Rol Asignado</h3>
-              <div v-if="authStore.user.role" class="role-badge">
-                {{ authStore.user.role.nombre }}
+              <div v-if="authStore.user.rol" class="rol-badge">
+                {{ authStore.user.rol.nombre }}
               </div>
               <p v-else class="info-text-secondary text-center">No hay rol asignado.</p>
             </div>
 
+            <div v-if="authStore.user.tipoUsuario === 'externo' && authStore.user.empresa" class="info-section col-span-1 md:col-span-2">
+            <p class="info-text">IngeniaCore</p>
+          </div>
 
-          <!-- Sección empresa externa o mensaje -->
+
           <div v-if="authStore.user.tipoUsuario === 'externo' && authStore.user.empresa" class="info-section col-span-1 md:col-span-2">
             <h3 class="text-2xl font-semibold mb-4 section-title-purple">Información de la Empresa</h3>
             <div class="space-y-3">
@@ -83,13 +85,8 @@
             <p class="info-text-secondary">No hay información de empresa disponible.</p>
           </div>
 
-          <!-- Empresa asociada -->
-          <div class="info-section col-span-1 md:col-span-2">
-            <h3 class="text-2xl font-semibold mb-4 section-title-yellow">Empresa Asociada</h3>
-            <p class="info-text">IngeniaCore</p>
           </div>
 
-        </div>
 
         <!-- Estado de carga -->
         <div v-else class="text-center mt-12 p-8 loading-section">
@@ -216,6 +213,7 @@ const uploadProfilePicture = async () => {
   }
 };
 </script>
+
 <style scoped>
 /* Estilos para el contenedor principal de la tarjeta */
 .profile-card {
@@ -245,7 +243,12 @@ const uploadProfilePicture = async () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Sombra sutil */
   display: flex;
   flex-direction: column;
-  align-items: flex-start; /* Alinea el contenido a la izquierda */
+  align-items: flex-start; /* Alinea el contenido a la izquierda por defecto */
+}
+
+/* Ajuste para centrar contenido específico dentro de info-section cuando se usa text-center */
+.info-section.text-center {
+  align-items: center; /* Esto centrará los elementos flexibles hijos */
 }
 
 /* Estilos para la sección de foto de perfil */
@@ -285,9 +288,6 @@ const uploadProfilePicture = async () => {
   border-radius: 50%; /* por si falta, asegura que el img también sea circular */
   display: block;
 }
-
-
-
 
 .upload-overlay {
   position: absolute;
@@ -351,8 +351,9 @@ const uploadProfilePicture = async () => {
   width: 100%;
 }
 
+/* La sección 'Empresa Asociada' fue eliminada, así que no necesitamos este estilo */
 .section-title-yellow {
-  color: #FFC107; /* Amarillo de Vuetify para títulos de sección */
+  color: #FFC107;
   font-family: 'Inter', sans-serif;
   font-weight: 600;
   text-align: center;
@@ -373,19 +374,6 @@ const uploadProfilePicture = async () => {
 .info-text-secondary {
   color: #777777; /* Texto secundario en gris más claro */
   font-family: 'Inter', sans-serif;
-}
-
-/* Estilos para el botón de edición */
-.edit-button {
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  padding: 12px 30px;
-  border-radius: 8px;
-  transition: background-color 0.3s ease;
-}
-
-.edit-button:hover {
-  background-color: #1565C0 !important; /* Un azul un poco más oscuro al pasar el ratón */
 }
 
 /* Estilos para el mensaje de carga */
@@ -442,11 +430,6 @@ const uploadProfilePicture = async () => {
 .list-disc { list-style-type: disc; }
 .list-inside { list-style-position: inside; }
 
-/* Icono de Font Awesome (si lo usas directamente, aunque Vuetify usa mdi) */
-.fa-edit {
-  margin-right: 0.5rem;
-}
-
 /* Estilos compartidos para cuadros */
 .shared-box {
   margin-top: 20px; /* Espaciado */
@@ -457,23 +440,27 @@ const uploadProfilePicture = async () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Sombra suave */
 }
 
-.role-badge {
+.rol-badge {
   display: inline-block;
-  padding: 12px 24px;
-  background: linear-gradient(to right, #0e5cc2, #134d74);
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #1e88e5, #42a5f5, #64b5f6);
   color: white;
-  font-weight: 600;
-  font-size: 1.1rem;
-  border-radius: 30px;
+  font-weight: 700;
+  font-size: 1rem;
+  border-radius: 20px;
   text-align: center;
   margin: 0 auto;
-  box-shadow: 0 4px 10px rgba(76, 175, 80, 0.4);
-  transition: transform 0.3s ease;
+  box-shadow: 0 4px 15px rgba(30, 136, 229, 0.6);
+  border: 2px solid white;
+  transition: all 0.3s ease;
+  cursor: default;
 }
 
-.role-badge:hover {
-  transform: scale(1.05);
+.rol-badge:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(30, 136, 229, 0.8);
 }
+
 
 </style>
 
