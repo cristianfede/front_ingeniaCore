@@ -10,7 +10,6 @@
         </p>
 
         <div v-if="authStore.user" class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <!-- Sección de foto de perfil -->
           <div class="profile-picture-section">
             <h3 class="text-2xl font-semibold mb-4 section-title-blue">Foto de Perfil</h3>
             <div class="avatar-container" @click="triggerFileInput">
@@ -43,7 +42,6 @@
             <p v-if="uploading" class="uploading-text">Subiendo...</p>
           </div>
 
-          <!-- Sección datos personales -->
           <div class="info-section">
             <h3 class="text-2xl font-semibold mb-4 section-title-blue">Datos Personales</h3>
             <div class="space-y-3">
@@ -55,12 +53,8 @@
             </div>
           </div>
 
-          <!-- Sección roles -->
-          <div class="info-section">
-            <h3 class="text-2xl font-semibold mb-4 section-title-green">Roles Asignados</h3>
-            <div v-if="authStore.user.roles?.length">
-              <ul class="list-disc list-inside space-y-2">
-                <li v-for="role in authStore.user.roles" :key="role.id" class="info-text">
+          <div class="info-section col-span-1 md:col-span-2 text-center"> <h3 class="text-2xl font-semibold mb-4 section-title-green">Roles Asignados</h3>
+            <div v-if="authStore.user.roles?.length" class="w-full"> <ul class="list-disc list-inside inline-block text-left space-y-2"> <li v-for="role in authStore.user.roles" :key="role.id" class="info-text">
                   {{ role.nombre }}
                 </li>
               </ul>
@@ -68,7 +62,6 @@
             <p v-else class="info-text-secondary">No hay roles asignados.</p>
           </div>
 
-          <!-- Sección empresa externa o mensaje -->
           <div v-if="authStore.user.tipoUsuario === 'externo' && authStore.user.empresa" class="info-section col-span-1 md:col-span-2">
             <h3 class="text-2xl font-semibold mb-4 section-title-purple">Información de la Empresa</h3>
             <div class="space-y-3">
@@ -81,21 +74,8 @@
             <p class="info-text-secondary">No hay información de empresa disponible.</p>
           </div>
 
-          <!-- Empresa asociada -->
-          <div class="info-section col-span-1 md:col-span-2">
-            <h3 class="text-2xl font-semibold mb-4 section-title-yellow">Empresa Asociada</h3>
-            <p class="info-text">IngeniaCore</p>
           </div>
 
-          <!-- Botón editar -->
-          <div class="col-span-1 md:col-span-2 text-center mt-6">
-            <v-btn @click="editProfile" color="blue" class="edit-button">
-              <v-icon left>mdi-pencil</v-icon> Editar Perfil
-            </v-btn>
-          </div>
-        </div>
-
-        <!-- Estado de carga -->
         <div v-else class="text-center mt-12 p-8 loading-section">
           <p class="text-xl font-semibold loading-text">Cargando información del usuario...</p>
         </div>
@@ -187,10 +167,12 @@ const uploadProfilePicture = async () => {
   }
 };
 
-const editProfile = () => {
-  // Lógica para editar perfil
-};
+// Se ha eliminado la función editProfile ya que el botón fue removido
+// const editProfile = () => {
+//   // Lógica para editar perfil
+// };
 </script>
+
 <style scoped>
 /* Estilos para el contenedor principal de la tarjeta */
 .profile-card {
@@ -220,7 +202,12 @@ const editProfile = () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Sombra sutil */
   display: flex;
   flex-direction: column;
-  align-items: flex-start; /* Alinea el contenido a la izquierda */
+  align-items: flex-start; /* Alinea el contenido a la izquierda por defecto */
+}
+
+/* Ajuste para centrar contenido específico dentro de info-section cuando se usa text-center */
+.info-section.text-center {
+  align-items: center; /* Esto centrará los elementos flexibles hijos */
 }
 
 /* Estilos para la sección de foto de perfil */
@@ -321,13 +308,16 @@ const editProfile = () => {
   width: 100%;
 }
 
+/* La sección 'Empresa Asociada' fue eliminada, así que no necesitamos este estilo */
+/*
 .section-title-yellow {
-  color: #FFC107; /* Amarillo de Vuetify para títulos de sección */
+  color: #FFC107;
   font-family: 'Inter', sans-serif;
   font-weight: 600;
   text-align: center;
   width: 100%;
 }
+*/
 
 .info-label {
   color: #333333; /* Etiquetas en color oscuro */
@@ -345,7 +335,8 @@ const editProfile = () => {
   font-family: 'Inter', sans-serif;
 }
 
-/* Estilos para el botón de edición */
+/* El estilo para el botón de edición fue eliminado */
+/*
 .edit-button {
   font-family: 'Inter', sans-serif;
   font-weight: 600;
@@ -355,8 +346,9 @@ const editProfile = () => {
 }
 
 .edit-button:hover {
-  background-color: #1565C0 !important; /* Un azul un poco más oscuro al pasar el ratón */
+  background-color: #1565C0 !important;
 }
+*/
 
 /* Estilos para el mensaje de carga */
 .loading-section {
@@ -412,10 +404,10 @@ const editProfile = () => {
 .list-disc { list-style-type: disc; }
 .list-inside { list-style-position: inside; }
 
-/* Icono de Font Awesome (si lo usas directamente, aunque Vuetify usa mdi) */
+/* El estilo para el icono de Font Awesome fue eliminado si no es necesario */
+/*
 .fa-edit {
   margin-right: 0.5rem;
 }
+*/
 </style>
-
-

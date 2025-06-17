@@ -7,7 +7,6 @@
     color="#90CAF9"
     style="margin-top: 64px;"
   >
-    <!-- Usuario -->
     <v-list>
       <v-list-item
         prepend-avatar="https://randomuser.me/api/portraits/women/85.jpg"
@@ -18,7 +17,6 @@
 
     <v-divider></v-divider>
 
-    <!-- Menú principal -->
     <v-list density="compact" nav>
       <v-list-item
         prepend-icon="mdi-view-dashboard"
@@ -27,7 +25,6 @@
         link
       />
 
-      <!-- Submenú Configuración -->
       <v-list-group
         prepend-icon="mdi-cog"
         title="Configuración"
@@ -38,20 +35,25 @@
         </template>
 
         <v-list-item
+          prepend-icon="mdi-account"
+          title="Perfil"
+          :to="{ path: '/profile' }"
+          link
+        />
+        <v-list-item
           prepend-icon="mdi-account-group"
-          title="Creación de Roles"
+          title="Roles"
           :to="{ path: '/roles-crud' }"
           link
         />
         <v-list-item
           prepend-icon="mdi-account-group-outline"
-          title="Formularios permisos"
+          title="Permisos"
           :to="{ path: '/permisos' }"
           link
         />
       </v-list-group>
 
-      <!-- Submenú Tickets -->
       <v-list-group
         prepend-icon="mdi-ticket"
         title="Tickets"
@@ -63,7 +65,7 @@
 
         <v-list-item
           prepend-icon="mdi-ticket"
-          title="Tickets"
+          title="Crear"
           :to="{ path: '/tickets' }"
           link
         />
@@ -75,12 +77,6 @@
         />
       </v-list-group>
 
-      <v-list-item
-        prepend-icon="mdi-account"
-        title="Profile"
-        :to="{ path: '/profile' }"
-        link
-      />
       <v-list-item
         prepend-icon="mdi-table"
         title="Usuarios"

@@ -8,11 +8,11 @@ import {
   obtenerEstados,
   obtenerPrioridades,
   obtenerEmpresas,
-  obtenerUsuariosAsignables,
+  obtenerTecnicos, // ✅ Ahora importamos la función correcta
   obtenerCategorias,
   obtenerServicios,
-  downloadTicketAttachment // ¡NUEVA IMPORTACIÓN!
-} from '../services/ticketService';
+  downloadTicketAttachment
+} from '../services/ticketService'; // Asegúrate que la ruta a ticketService.ts sea correcta
 import ConfirmDialog from '../components/Confirmardialogo.vue';
 
 // --- Estado para el formulario de Ticket ---
@@ -27,8 +27,8 @@ const servicio_id = ref<number | null>(null);
 
 const archivoAdjunto = ref<File | null>(null);
 const fileNameDisplay = ref('');
-const existingFileName = ref<string | null>(null); // ¡NUEVO! Para mostrar el nombre del archivo existente
-const clearExistingAttachment = ref(false); // ¡NUEVO! Bandera para eliminar adjunto existente sin subir uno nuevo
+const existingFileName = ref<string | null>(null);
+const clearExistingAttachment = ref(false);
 
 const snackbar = ref({
   show: false,
@@ -42,9 +42,21 @@ const editingTicketId = ref<number | null>(null);
 const estados = ref<{ id: number; nombre: string }[]>([]);
 const prioridades = ref<{ id: number; nombre: string }[]>([]);
 const empresa = ref<{ id: number; nombre: string }[]>([]);
-const usuariosAsignados = ref<{ id: number; nombre: string; apellido: string; role?: { id: number; nombre: string } }[]>([]);
+
+// ✅ Tipo de dato actualizado: Esperamos 'nombreCompleto' directamente del backend
+const usuariosAsignados = ref<{ id: number; nombreCompleto: string }[]>([]);
+
 const categorias = ref<{ id: number; nombre: string }[]>([]);
 const servicios = ref<{ id: number; nombre: string }[]>([]);
+
+// ✅ ELIMINADA: Esta propiedad computada ya no es necesaria
+// porque el backend ya devuelve 'nombreCompleto'
+// const usuariosAsignadosFormateados = computed(() =>
+//   usuariosAsignados.value.map(u => ({
+//     ...u,
+//     nombreCompleto: `${u.nombre} ${u.apellido}`
+//   }))
+// );
 
 // --- Variables para el modal de confirmación ---
 const showConfirmDialog = ref(false);
@@ -67,15 +79,15 @@ function editTicket(ticket: any) {
   estado_id.value = ticket.estado?.id || null;
   prioridad_id.value = ticket.prioridad?.id || null;
   empresa_id.value = ticket.empresa?.id || null;
-  usuario_asignado_id.value = ticket.usuarioAsignado?.id || null;
+  usuario_asignado_id.value = ticket.usuarioAsignado?.id || null; // ✅ Asignación directa del ID
   categoria_id.value = ticket.categoria?.id || null;
   servicio_id.value = ticket.servicio?.id || null;
 
   // Lógica para el archivo adjunto existente
   archivoAdjunto.value = null; // Siempre se limpia al editar para nueva subida
   fileNameDisplay.value = ''; // Se limpia el nombre del archivo seleccionado para nueva subida
-  existingFileName.value = ticket.nombreArchivo || null; // ¡NUEVO! Muestra el nombre del archivo si existe
-  clearExistingAttachment.value = false; // ¡NUEVO! Resetea la bandera al editar
+  existingFileName.value = ticket.nombreArchivo || null; // Muestra el nombre del archivo si existe
+  clearExistingAttachment.value = false; // Resetea la bandera al editar
 }
 
 /**
@@ -180,8 +192,8 @@ function resetForm() {
   servicio_id.value = null;
   archivoAdjunto.value = null;
   fileNameDisplay.value = '';
-  existingFileName.value = null; // ¡NUEVO! Limpiar el nombre del archivo existente
-  clearExistingAttachment.value = false; // ¡NUEVO! Limpiar la bandera
+  existingFileName.value = null;
+  clearExistingAttachment.value = false;
   isEditing.value = false;
   editingTicketId.value = null;
   ticketToDeleteId.value = null;
@@ -195,7 +207,7 @@ type MySortItem = {
   order: boolean | 'asc' | 'desc' | undefined;
 };
 // Inicialmente, la tabla se ordenará de forma descendente (los más recientes primero)
-const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'desc' }]); // CAMBIADO a 'desc' por defecto
+const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'desc' }]);
 const sortDesc = ref(false);
 
 // Cabeceras de la tabla
@@ -205,8 +217,8 @@ const headers = [
   { title: 'Empresa', key: 'empresa.nombre', sortable: false },
   { title: 'Prioridad', key: 'prioridad.nombre', sortable: false },
   { title: 'Estado', key: 'estado.nombre', sortable: false },
-  { title: 'Técnico', key: 'usuarioAsignado.nombre', sortable: false },
-  { title: 'Adjunto', key: 'nombreArchivo', sortable: false }, // ¡NUEVA CABECERA!
+  { title: 'Técnico', key: 'usuarioAsignado.nombre', sortable: false }, // Asumiendo que 'usuarioAsignado' tiene una propiedad 'nombre'
+  { title: 'Adjunto', key: 'nombreArchivo', sortable: false },
   { title: 'Acciones', key: 'actions', sortable: false },
 ];
 
@@ -242,10 +254,9 @@ async function cargarListasReferencia() {
     prioridades.value = await obtenerPrioridades();
     empresa.value = await obtenerEmpresas();
 
-    const allUsers = await obtenerUsuariosAsignables();
-    usuariosAsignados.value = allUsers.filter(user =>
-      user.role && user.role.nombre === 'Técnico de soporte'
-    );
+    // ✅ ¡Cargando los técnicos directamente con la función obtenerTecnicos!
+    // Esta función ya devuelve los datos con 'nombreCompleto'
+    usuariosAsignados.value = await obtenerTecnicos();
 
     categorias.value = await obtenerCategorias();
     servicios.value = await obtenerServicios();
@@ -262,8 +273,8 @@ const filteredTickets = computed(() =>
     (t.empresa?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) ||
     (t.prioridad?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) ||
     (t.estado?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) ||
-    (t.usuarioAsignado?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) ||
-    (t.nombreArchivo || '').toLowerCase().includes(search.value.toLowerCase()) // ¡NUEVO! Filtrar por nombre de archivo
+    (t.usuarioAsignado?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) || // Asumiendo que 'usuarioAsignado' tiene 'nombre'
+    (t.nombreArchivo || '').toLowerCase().includes(search.value.toLowerCase())
   )
 );
 
@@ -325,7 +336,7 @@ function clearSelectedFile() {
   }
 }
 
-// ¡NUEVO! Función para eliminar el adjunto existente
+// Función para eliminar el adjunto existente
 function removeExistingAttachment() {
   existingFileName.value = null;
   clearExistingAttachment.value = true; // Establecer la bandera para enviar al backend
@@ -333,10 +344,9 @@ function removeExistingAttachment() {
   clearSelectedFile();
 }
 
-// ¡NUEVO! Función para descargar el adjunto
+// Función para descargar el adjunto
 async function downloadAttachment(ticketId: number) {
   try {
-    // La función downloadTicketAttachment ya maneja la lógica de descarga
     await downloadTicketAttachment(ticketId);
   } catch (error: any) {
     snackbar.value = { show: true, message: error.message || 'Error al descargar el archivo.', color: 'error' };
@@ -406,9 +416,7 @@ async function downloadAttachment(ticketId: number) {
               <v-select
                 label="Asignado a (Técnico)"
                 v-model="usuario_asignado_id"
-                :items="usuariosAsignados"
-                item-title="nombre"
-                item-value="id"
+                :items="usuariosAsignados"     item-title="nombreCompleto"    item-value="id"
                 outlined
                 clearable
                 density="compact"
@@ -434,6 +442,7 @@ async function downloadAttachment(ticketId: number) {
                 outlined
                 clearable
                 density="compact"
+                class="mb-3"
               ></v-select>
             </v-col>
           </v-row>
@@ -584,5 +593,9 @@ async function downloadAttachment(ticketId: number) {
 <style scoped>
 .form {
   padding: 1rem;
+}
+.text-h5, .text-h6 {
+  color: #1976D2;
+  font-weight: bold;
 }
 </style>
