@@ -3,29 +3,59 @@
     <v-card class="mb-5" outlined>
       <v-card-title class="text-h5 text-center">Formulario de Empresa</v-card-title>
       <v-card-text>
-        <v-form @submit.prevent="submit" class="form" style="color: black">
+        <v-form ref="empresaForm" @submit.prevent="submit" class="form" style="color: black">
           <v-row>
             <v-col cols="12" md="6">
-              <v-text-field label="Nombre de la Empresa" v-model="nombre" required outlined />
-            </v-col>
+              <v-text-field
+                label="Nombre de la Empresa"
+                v-model="nombre"
+                outlined
+                :rules="[
+                  v => !!v || 'El nombre de la empresa es requerido',
+                  v => (v && v.length >= 3) || 'El nombre debe tener al menos 3 caracteres',
+                  validateNombreUnico
+                ]"
+              /> </v-col>
             <v-col cols="12" md="6">
-              <v-text-field label="NIT" v-model="nit" required outlined />
-            </v-col>
+              <v-text-field
+                label="NIT"
+                v-model="nit"
+                outlined
+                :rules="[
+                  v => !!v || 'El NIT es requerido',
+                  v => /^[0-9-]+$/.test(v) || 'El NIT debe contener solo números y guiones'
+                ]"
+              /> </v-col>
             <v-col cols="12" md="6">
-              <v-text-field label="Correo de Contacto" v-model="correo" type="email" required outlined />
-            </v-col>
+              <v-text-field
+                label="Correo de Contacto"
+                v-model="correo"
+                type="email"
+                outlined
+                :rules="[
+                  v => !!v || 'El correo de contacto es requerido',
+                  v => /.+@.+\..+/.test(v) || 'Formato de correo electrónico inválido'
+                ]"
+              /> </v-col>
             <v-col cols="12" md="6">
-              <v-text-field label="telefono" v-model="telefono" type="telefono" required outlined />
-            </v-col>
+              <v-text-field
+                label="Teléfono"
+                v-model="telefono"
+                outlined
+                :rules="[
+                  v => !!v || 'El teléfono es requerido',
+                  v => /^\d+$/.test(v) || 'El teléfono debe contener solo números',
+                  v => (v && v.length >= 7) || 'El teléfono debe tener al menos 7 dígitos'
+                ]"
+              /> </v-col>
             <v-col cols="12" v-if="isEditing">
               <v-select
                 label="Estado de la Empresa"
                 v-model="estado"
                 :items="['activo', 'inactivo']"
                 outlined
-                required
-              ></v-select>
-            </v-col>
+                :rules="[v => !!v || 'El estado de la empresa es requerido']"
+              /> </v-col>
           </v-row>
           <div class="d-flex justify-start">
             <v-btn v-if="isEditing" color="secondary" @click="resetForm" class="mr-2">Cancelar</v-btn>
@@ -40,8 +70,7 @@
       <v-card-title class="text-h6">Lista de Empresas</v-card-title>
       <v-row align="center" class="px-4 pb-4">
         <v-col cols="12" sm="6" md="4" lg="3">
-          <v-text-field v-model="search" label="Buscar empresa" prepend-inner-icon="mdi-magnify" outlined dense hide-details />
-        </v-col>
+          <v-text-field v-model="search" label="Buscar empresa" prepend-inner-icon="mdi-magnify" outlined dense hide-details /> </v-col>
         <v-col cols="12" sm="6" md="4" lg="3">
           <v-select
             v-model="filtroEstadoTabla"
@@ -50,8 +79,7 @@
             outlined
             dense
             hide-details
-          ></v-select>
-        </v-col>
+          /> </v-col>
         <v-col cols="12" sm="6" md="4" lg="6" class="d-flex justify-end">
           <v-btn small @click="sortByIdAsc" class="mr-2" color="#1976D2" dark>
             <v-icon left>mdi-sort-ascending</v-icon> Más Antiguas
@@ -112,14 +140,12 @@
       :confirm-color="confirmDialogConfirmColor"
       @confirm="handleConfirmAction"
       @cancel="handleCancelAction"
-    />
-  </v-container>
+    /> </v-container>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
-// *** IMPORTACIONES ACTUALIZADAS DEL SERVICIO ***
-import { crearEmpresa, obtenerEmpresas, actualizarEmpresa, inactivarEmpresa, activarEmpresa, eliminarEmpresaPermanentemente } from '../services/empresasService';
+import { crearEmpresa, obtenerEmpresas, actualizarEmpresa, inactivarEmpresa, activarEmpresa, eliminarEmpresaPermanentemente, verificarNombreEmpresaUnico } from '../services/empresasService';
 import ConfirmDialog from '../components/Confirmardialogo.vue';
 
 const nombre = ref('');
@@ -136,17 +162,17 @@ const snackbar = ref({
 const isEditing = ref(false);
 const editingEmpresaId = ref<number | null>(null);
 
-// --- Variables de estado para los modales de confirmación (actualizadas para nuevas acciones) ---
+const empresaForm = ref<any>(null);
+
 const showConfirmDialog = ref(false);
 const confirmDialogTitle = ref('');
 const confirmDialogMessage = ref('');
 const confirmDialogConfirmText = ref('');
 const confirmDialogConfirmColor = ref('');
-// Define los tipos de acciones posibles
+
 type ActionType = 'create' | 'update' | 'inactivate' | 'activate' | 'delete_permanent';
-const currentAction = ref<ActionType | ''>(''); // 'create', 'update', 'inactivate', 'activate', 'delete_permanent'
-const empresaToProcessId = ref<number | null>(null); // Usamos una sola variable para el ID
-// ------------------------------------------------------------------
+const currentAction = ref<ActionType | ''>('');
+const empresaToProcessId = ref<number | null>(null);
 
 const empresas = ref<any[]>([]);
 const search = ref('');
@@ -155,9 +181,9 @@ type MySortItem = {
   order: boolean | 'asc' | 'desc' | undefined;
 };
 
-const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'desc' }]); // Ordenar por ID descendente por defecto para "más recientes"
+const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'desc' }]);
 
-const filtroEstadoTabla = ref('todos'); // Nuevo filtro de estado para la tabla
+const filtroEstadoTabla = ref('todos');
 
 const headers = [
   { title: 'ID', key: 'id', sortable: false },
@@ -166,7 +192,7 @@ const headers = [
   { title: 'Correo', key: 'correo', sortable: false },
   { title: 'Telefono', key: 'telefono', sortable: false },
   { title: 'Proyectos', key: 'proyectos', sortable: false },
-  { title: 'Estado', key: 'estado', sortable: false }, // Nueva columna para el estado
+  { title: 'Estado', key: 'estado', sortable: false },
   { title: 'Acciones', key: 'actions', sortable: false },
 ];
 
@@ -178,7 +204,6 @@ const sortByIdDesc = () => {
   sortBy.value = [{ key: 'id', order: 'desc' }];
 };
 
-// Observa cambios en filtroEstadoTabla y recarga empresas
 watch(filtroEstadoTabla, async (newVal) => {
   await cargarEmpresas(newVal);
 });
@@ -213,23 +238,42 @@ function editEmpresa(empresa: any) {
   nit.value = empresa.nit;
   correo.value = empresa.correo;
   telefono.value = empresa.telefono;
-  estado.value = empresa.estado; // Carga el estado actual para edición
+  estado.value = empresa.estado;
 
   window.scrollTo({ top: 0, behavior: 'smooth'})
 }
 
+async function validateNombreUnico(value: string) {
+  if (!value) return true;
+  
+  if (isEditing.value && editingEmpresaId.value !== null) {
+    const originalEmpresa = empresas.value.find(e => e.id === editingEmpresaId.value);
+    if (originalEmpresa && originalEmpresa.nombre === value) {
+      return true;
+    }
+  }
+
+  try {
+    const isUnique = await verificarNombreEmpresaUnico(value);
+    return isUnique || 'Ya existe una empresa con este nombre.';
+  } catch (error) {
+    console.error('Error al verificar unicidad del nombre:', error);
+    return 'Error al verificar la unicidad del nombre.';
+  }
+}
+
 async function submit() {
-  // Validación básica del formulario
-  if (!nombre.value || !nit.value || !correo.value || !telefono.value) {
+  const { valid } = await empresaForm.value.validate();
+
+  if (!valid) {
     snackbar.value = {
       show: true,
-      message: 'Por favor, completa todos los campos requeridos.',
+      message: 'Por favor, completa correctamente todos los campos requeridos.',
       color: 'warning',
     };
     return;
   }
 
-  // Configura el modal de confirmación según la acción
   if (isEditing.value) {
     confirmDialogTitle.value = 'Confirmar Actualización de Empresa';
     confirmDialogMessage.value = '¿Estás seguro de que quieres actualizar esta empresa?';
@@ -243,11 +287,11 @@ async function submit() {
     confirmDialogConfirmColor.value = 'success';
     currentAction.value = 'create';
   }
-  showConfirmDialog.value = true; // Muestra el modal
+  showConfirmDialog.value = true;
 }
 
 async function handleConfirmAction() {
-  snackbar.value.show = false; // Oculta cualquier snackbar anterior
+  snackbar.value.show = false;
 
   try {
     const empresaData = {
@@ -255,7 +299,7 @@ async function handleConfirmAction() {
       nit: nit.value,
       correo: correo.value,
       telefono: telefono.value,
-      estado: estado.value, // Incluye el estado al actualizar o crear
+      estado: estado.value,
     };
 
     if (currentAction.value === 'create') {
@@ -281,20 +325,18 @@ async function handleConfirmAction() {
       }
     }
 
-    // Recarga las empresas después de cualquier operación exitosa para reflejar los cambios
     await cargarEmpresas(filtroEstadoTabla.value);
     resetForm();
   } catch (err: any) {
-    const errorMessage = err?.message || 'Error al procesar la operación.'; // Ajustado para 'fetch'
+    const errorMessage = err?.message || 'Error al procesar la operación.';
     snackbar.value = { show: true, message: errorMessage, color: 'error' };
   } finally {
     showConfirmDialog.value = false;
     currentAction.value = '';
-    empresaToProcessId.value = null; // Limpiar el ID después de la acción
+    empresaToProcessId.value = null;
   }
 }
 
-// *** Nuevas funciones para manejar inactivar, activar y eliminar permanentemente ***
 function handleInactivateEmpresa(id: number) {
   empresaToProcessId.value = id;
   confirmDialogTitle.value = 'Confirmar Inactivación';
@@ -320,15 +362,14 @@ function handleDeletePermanentlyEmpresa(id: number) {
   confirmDialogTitle.value = 'Eliminar Empresa Permanentemente';
   confirmDialogMessage.value = '¡ADVERTENCIA! ¿Estás ABSOLUTAMENTE seguro de que quieres eliminar esta empresa permanentemente? Esta acción NO se puede deshacer y eliminará todos los datos asociados. Los proyectos asociados a la empresa no se pueden eliminar por las políticas del negocio.';
   confirmDialogConfirmText.value = 'Eliminar PERMANENTEMENTE';
-  confirmDialogConfirmColor.value = 'grey darken-2'; // O 'error' para mayor énfasis
+  confirmDialogConfirmColor.value = 'grey darken-2';
   currentAction.value = 'delete_permanent';
   showConfirmDialog.value = true;
 }
-// ----------------------------------------------------------------------------------
 
 function handleCancelAction() {
   console.log('Acción de empresa cancelada por el usuario.');
-  empresaToProcessId.value = null; // Importante limpiar si se cancela
+  empresaToProcessId.value = null;
   currentAction.value = '';
   showConfirmDialog.value = false;
 }
@@ -338,15 +379,17 @@ function resetForm() {
   nit.value = '';
   correo.value = '';
   telefono.value = '';
-  estado.value = 'activo'; // Restablecer estado a 'activo' al limpiar formulario
+  estado.value = 'activo';
   isEditing.value = false;
   editingEmpresaId.value = null;
   empresaToProcessId.value = null;
+  if (empresaForm.value) {
+    empresaForm.value.resetValidation();
+  }
 }
 </script>
 
 <style scoped>
-/* Estilos adicionales si son necesarios, pero Vuetify y Tailwind CSS deberían manejar la mayoría */
 .form {
   padding: 1rem;
 }

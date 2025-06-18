@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 // Asegúrate de que la ruta a tu servicio es correcta
-import { obtenerRoles, crearRol, actualizarRol, eliminarRolPermanentemente } from '../services/CreacionRoles'
+import { obtenerRoles, crearRol, actualizarRol, eliminarRolPermanentemente, verificarNombreRolUnico, inactivarRol, activarRol } from '../services/CreacionRoles' // <-- Importa verificarNombreRolUnico y las funciones de estado si las usas directamente
 // Asegúrate de que la ruta a tu componente de diálogo es correcta
 import ConfirmDialog from '../components/Confirmardialogo.vue';
 
@@ -18,8 +18,8 @@ const isEditing = ref(false)
 const editingRolId = ref<number | null>(null)
 
 // Para almacenar los errores de validación del backend.
-// Aunque no se usará para mensajes de campo específicos para errores 422 de unicidad,
-// se mantiene para otros posibles errores de validación de campo individuales.
+// En este caso, ya no se poblará para errores de unicidad del nombre,
+// ya que la validación asíncrona los manejará directamente en la regla.
 const validationErrors = ref<Record<string, string[]>>({});
 
 // Nuevas referencias para la alerta general del formulario
@@ -59,12 +59,40 @@ const headers = [
 
 // REGLAS DE VALIDACIÓN FRONEND con Vuetify. Estas se ejecutan ANTES de enviar al backend.
 const rules = {
-  required: (value: string) => !!value || 'Este campo es requerido (Crear Roles Unicos).',
-  minLength: (v: string) => (v && v.length >= 3) || 'Mínimo 3 caracteres y Nombre Unico.',
+  required: (value: string) => !!value || 'Este campo es requerido.', // Modificado el mensaje
+  minLength: (v: string) => (v && v.length >= 3) || 'Mínimo 3 caracteres.', // Modificado el mensaje
   maxLength: (v: string) => (v && v.length <= 50) || 'Máximo 50 caracteres para el nombre.',
   descriptionMaxLength: (v: string) => (v && v.length <= 255) || 'Máximo 255 caracteres para la descripción.',
   estadoRequired: (value: string) => !!value || 'El estado es requerido.'
 };
+
+// --- NUEVA FUNCIÓN DE VALIDACIÓN ASÍNCRONA PARA EL NOMBRE DEL ROL ---
+async function validateNombreRolUnico(value: string) {
+  if (!value) return true; // Deja que la regla `required` maneje si el campo está vacío.
+
+  // Si estamos editando y el nombre no ha cambiado, no es necesario verificar con el backend
+  // para evitar llamadas innecesarias. Se compara con el valor original si se tiene.
+  // Esto es una optimización, pero la lógica del backend con `excludeId` ya es robusta.
+  // Si no quieres la optimización, simplemente elimina el `if` de abajo y llama directamente a `verificarNombreRolUnico`.
+  if (isEditing.value && editingRolId.value !== null) {
+      const originalRol = roles.value.find(r => r.id === editingRolId.value);
+      if (originalRol && originalRol.nombre.toLowerCase() === value.toLowerCase()) {
+          return true; // El nombre no ha cambiado, es válido.
+      }
+  }
+
+  try {
+    // Pasa el ID del rol actual si estás editando, para que el backend lo excluya de la verificación
+    const isUnique = await verificarNombreRolUnico(value, editingRolId.value || undefined);
+    return isUnique || 'Ya existe un rol con este nombre. Por favor, elige uno diferente.'; // Mensaje específico para unicidad
+  } catch (error) {
+    console.error('Error al verificar unicidad del nombre del rol:', error);
+    // Este mensaje se mostrará si hay un error de red o de servidor al verificar la unicidad
+    return 'Error al verificar la unicidad del nombre del rol. Intenta de nuevo.';
+  }
+}
+// --- FIN NUEVA FUNCIÓN DE VALIDACIÓN ASÍNCRONA ---
+
 
 async function cargarRoles() {
   try {
@@ -88,7 +116,7 @@ async function submitForm() {
   const { valid } = await form.value.validate(); // Valida todos los campos con reglas
 
   if (!valid) {
-    snackbar.value = { show: true, message: 'Por favor, corrige los errores del formulario.', color: 'warning' };
+    snackbar.value = { show: true, message: 'Por favor, corrige los errores del formulario antes de continuar.', color: 'warning' };
     return; // Detiene la ejecución si la validación frontend falla
   }
 
@@ -120,26 +148,25 @@ async function handleConfirmAction() {
       nombre: nombre.value,
       descripcion: descripcion.value,
     };
-    // El estado solo se añade si estamos editando, ya que al crear se fuerza a 'activo' en el backend
-    // Esto es una convención, asegúrate de que tu backend lo maneje así.
-    if (isEditing.value) {
-      rolData.estado = estado.value;
-    }
-
+    
     if (currentAction.value === 'create') {
+      // Al crear, el estado por defecto es 'activo' desde el backend.
+      // Si `descripcion` puede ser opcional al crear, ajusta la interfaz de `crearRol` en tu servicio.
       await crearRol(rolData);
       snackbar.value = { show: true, message: 'Rol creado exitosamente.', color: 'success' };
     } else if (currentAction.value === 'update') {
+      // Al actualizar, se envía el estado explícitamente.
+      rolData.estado = estado.value; // Añadir estado solo si estamos actualizando
       await actualizarRol(editingRolId.value!, rolData);
       snackbar.value = { show: true, message: 'Rol actualizado correctamente.', color: 'success' };
     } else if (currentAction.value === 'inactivate') {
       if (rolToDeleteId.value !== null) {
-        await actualizarRol(rolToDeleteId.value, { estado: 'inactivo' });
+        await inactivarRol(rolToDeleteId.value); // Usa la función inactivarRol
         snackbar.value = { show: true, message: 'Rol inactivado correctamente.', color: 'success' };
       }
     } else if (currentAction.value === 'activate') {
       if (rolToActivateId.value !== null) {
-        await actualizarRol(rolToActivateId.value, { estado: 'activo' });
+        await activarRol(rolToActivateId.value); // Usa la función activarRol
         snackbar.value = { show: true, message: 'Rol activado correctamente.', color: 'success' };
       }
     } else if (currentAction.value === 'delete_permanent') {
@@ -155,18 +182,17 @@ async function handleConfirmAction() {
 
   } catch (err: any) {
     console.error('Error en handleConfirmAction:', err);
-    // MANEJO DE ERRORES DE VALIDACIÓN DEL BACKEND (código 422 de AdonisJS/VineJS)
-    // Se ajusta para que el mensaje general "crea roles únicos" aparezca en la alerta del formulario.
-    if (err.response && err.response.status === 422 && err.response.data && err.response.data.messages) {
-      // No se puebla validationErrors.value[error.field] aquí para evitar mensajes por campo
-      // para la unicidad. Solo se activa la alerta general del formulario.
-      formAlertMessage.value = 'Por favor, crea roles únicos.';
+    // Ahora el error es un objeto Error estándar con el mensaje en `err.message`
+    // No hay `err.response.status` ni `err.response.data.messages` en el servicio actual
+    const errorMessage = err.message || 'Error al procesar la operación del rol. Intenta de nuevo más tarde.';
+    snackbar.value = { show: true, message: errorMessage, color: 'error' };
+
+    // Si el error es específicamente por unicidad del nombre (409 del backend),
+    // el backend ya debería haberlo capturado y devuelto un mensaje en `err.message`.
+    // Si necesitas un mensaje diferente para el formulario:
+    if (errorMessage.includes('El nombre del rol ya está en uso.')) { // Compara con el mensaje que devuelve tu controlador en caso de conflicto
+      formAlertMessage.value = 'El nombre de rol ingresado ya está en uso. Por favor, elige uno diferente.';
       showFormAlert.value = true;
-      snackbar.value = { show: true, message: 'Se encontraron errores de validación. Por favor, revisa el formulario.', color: 'warning' };
-    } else {
-      // Para otros errores (ej. 500 Internal Server Error, 404 Not Found, o errores no estructurados)
-      const errorMessage = err?.response?.data?.message || 'Error al procesar la operación del rol. Intenta de nuevo más tarde.';
-      snackbar.value = { show: true, message: errorMessage, color: 'error' };
     }
   } finally {
     // Siempre cerrar el diálogo de confirmación y limpiar variables temporales
@@ -286,7 +312,6 @@ const sortByIdDesc = () => {
     <v-card class="mb-5" outlined>
       <v-card-title class="text-h5 text-center">Gestión de Roles</v-card-title>
       <v-card-text>
-        <!-- Alerta general para el formulario -->
         <v-alert
           v-if="showFormAlert"
           type="warning"
@@ -298,7 +323,6 @@ const sortByIdDesc = () => {
           {{ formAlertMessage }}
         </v-alert>
 
-        <!-- VUETIFY FORM: Vincula el formulario con la ref `form` para poder acceder a sus métodos -->
         <v-form ref="form" @submit.prevent="submitForm" class="form" style="color: black">
           <v-row>
             <v-col cols="12">
@@ -309,8 +333,7 @@ const sortByIdDesc = () => {
                 outlined
                 clearable
                 :error-messages="validationErrors.nombre" 
-                :rules="[rules.required, rules.minLength, rules.maxLength]"
-              />
+                :rules="[rules.required, rules.minLength, rules.maxLength, validateNombreRolUnico]" />
             </v-col>
             <v-col cols="12">
               <v-text-field

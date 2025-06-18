@@ -1,5 +1,6 @@
 // src/services/empresasService.ts
 
+// --- ¡DEFINICIÓN DE API_BASE_URL AQUÍ! ---
 const API_BASE_URL = 'http://localhost:3333/api' // Asegúrate de que esta URL sea correcta
 
 interface EmpresaData {
@@ -60,7 +61,7 @@ export async function crearEmpresa(empresaData: EmpresaData) {
 export async function actualizarEmpresa(id: number, empresaData: Partial<EmpresaData>) {
   try {
     const response = await fetch(`${API_BASE_URL}/empresas/${id}`, {
-      method: 'PUT', // Usamos PUT como lo tienes, asegúrate que tu controlador Adonis lo maneje también
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -83,7 +84,7 @@ export async function actualizarEmpresa(id: number, empresaData: Partial<Empresa
 export async function inactivarEmpresa(id: number) {
   try {
     const response = await fetch(`${API_BASE_URL}/empresas/${id}/inactivar`, {
-      method: 'PATCH', // Usamos PATCH según lo definido en tus rutas de Adonis
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -94,7 +95,7 @@ export async function inactivarEmpresa(id: number) {
       throw new Error(errorData.mensaje || 'Error al inactivar empresa');
     }
 
-    return await response.json(); // Puede devolver un mensaje de éxito
+    return await response.json();
   } catch (error) {
     console.error('Error al inactivar empresa:', error);
     throw error;
@@ -105,7 +106,7 @@ export async function inactivarEmpresa(id: number) {
 export async function activarEmpresa(id: number) {
   try {
     const response = await fetch(`${API_BASE_URL}/empresas/${id}/activar`, {
-      method: 'PATCH', // Usamos PATCH según lo definido en tus rutas de Adonis
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -116,7 +117,7 @@ export async function activarEmpresa(id: number) {
       throw new Error(errorData.mensaje || 'Error al activar empresa');
     }
 
-    return await response.json(); // Puede devolver un mensaje de éxito
+    return await response.json();
   } catch (error) {
     console.error('Error al activar empresa:', error);
     throw error;
@@ -127,7 +128,7 @@ export async function activarEmpresa(id: number) {
 export async function eliminarEmpresaPermanentemente(id: number) {
   try {
     const response = await fetch(`${API_BASE_URL}/empresas/${id}/permanente`, {
-      method: 'DELETE', // Usamos DELETE con la ruta específica
+      method: 'DELETE',
     });
 
     if (!response.ok) {
@@ -135,16 +136,32 @@ export async function eliminarEmpresaPermanentemente(id: number) {
       throw new Error(errorData.mensaje || 'Error al eliminar empresa permanentemente');
     }
 
-    return await response.json(); // Puede devolver un mensaje de éxito
+    return await response.json();
   } catch (error) {
     console.error('Error al eliminar empresa permanentemente:', error);
     throw error;
   }
 }
 
-// Puedes eliminar la función 'eliminarEmpresa' original si ya no la necesitas,
-// dado que ahora tienes 'inactivarEmpresa' y 'eliminarEmpresaPermanentemente'.
-// Si la ruta DELETE original `/empresas/:id` todavía apunta a `destroyPermanently`
-// en tu controlador, podrías mantenerla si así lo deseas, pero lo ideal es
-// que el frontend use las funciones con nombres más explícitos para evitar confusiones.
-// export async function eliminarEmpresa(id: number) { ... }
+// 7. Función para verificar unicidad del nombre de empresa
+export async function verificarNombreEmpresaUnico(nombre: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/empresas/check-unique-name?name=${encodeURIComponent(nombre)}`);
+    if (!response.ok) {
+      // Si el backend devuelve 409 (Conflict), significa que el nombre ya existe.
+      if (response.status === 409) {
+        return false; // Nombre ya existe
+      }
+      // Para cualquier otro error HTTP que no sea 409, lanzamos un error.
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Error al verificar unicidad del nombre');
+    }
+    const data = await response.json();
+    return data.isUnique; // Asume que el backend devuelve { isUnique: true/false }
+  } catch (error: any) {
+    console.error('Error en verificarNombreEmpresaUnico:', error);
+    // Si hay un error de red o de servidor, asumimos que no es único para evitar duplicados.
+    // O podrías relanzar el error si quieres que el frontend lo maneje de forma diferente.
+    throw new Error(error.message || 'Error de conexión al verificar el nombre.');
+  }
+}
