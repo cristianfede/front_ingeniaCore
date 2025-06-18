@@ -69,9 +69,10 @@
     <v-card outlined>
       <v-card-title class="text-h6">Lista de Empresas</v-card-title>
       <v-row align="center" class="px-4 pb-4">
-        <v-col cols="12" sm="6" md="4" lg="3">
-          <v-text-field v-model="search" label="Buscar empresa" prepend-inner-icon="mdi-magnify" outlined dense hide-details /> </v-col>
-        <v-col cols="12" sm="6" md="4" lg="3">
+        <v-col cols="12" sm="4" md="4" lg="3">
+          <v-text-field v-model="search" label="Buscar empresa" prepend-inner-icon="mdi-magnify" outlined dense hide-details />
+        </v-col>
+        <v-col cols="12" sm="4" md="4" lg="3">
           <v-select
             v-model="filtroEstadoTabla"
             :items="[{ title: 'Activas', value: 'activo' }, { title: 'Inactivas', value: 'inactivo' }, { title: 'Todas', value: 'todos' }]"
@@ -79,24 +80,29 @@
             outlined
             dense
             hide-details
-          /> </v-col>
-        <v-col cols="12" sm="6" md="4" lg="6" class="d-flex justify-end">
-          <v-btn small @click="sortByIdAsc" class="mr-2" color="#1976D2" dark>
-            <v-icon left>mdi-sort-ascending</v-icon> Más Antiguas
-          </v-btn>
-          <v-btn small @click="sortByIdDesc" color="#1976D2" dark>
-            <v-icon left>mdi-sort-descending</v-icon> Más Recientes
-          </v-btn>
+          />
+        </v-col>
+        <v-col cols="12" sm="4" md="4" lg="2">
+          <v-btn-toggle v-model="sortBy[0].order" mandatory variant="elevated" color="primary">
+            <v-btn value="asc" class="pa-2">
+              <v-icon>mdi-sort-ascending</v-icon>
+            </v-btn>
+            <v-btn value="desc" class="pa-2">
+              <v-icon>mdi-sort-descending</v-icon>
+            </v-btn>
+          </v-btn-toggle>
         </v-col>
       </v-row>
 
       <v-data-table
         :headers="headers"
-        :items="filteredEmpresas"
-        item-value="id"
-        v-model:sort-by="sortBy"
+        :items="processedEmpresas" item-value="id"
         class="elevation-1"
       >
+        <template v-slot:item.id="{ item }">
+          {{ item.id }}
+        </template>
+
         <template v-slot:item.estado="{ item }">
           <v-chip :color="item.estado === 'activo' ? 'green' : 'red'" variant="flat" size="small">
             {{ item.estado === 'activo' ? 'Activa' : 'Inactiva' }}
@@ -152,7 +158,7 @@ const nombre = ref('');
 const nit = ref('');
 const correo = ref('');
 const telefono = ref('');
-const estado = ref<'activo' | 'inactivo'>('activo'); // Valor por defecto para el estado y tipo específico
+const estado = ref<'activo' | 'inactivo'>('activo');
 
 const snackbar = ref({
   show: false,
@@ -176,17 +182,13 @@ const empresaToProcessId = ref<number | null>(null);
 
 const empresas = ref<any[]>([]);
 const search = ref('');
-type MySortItem = {
-  key: string;
-  order: boolean | 'asc' | 'desc' | undefined;
-};
-
-const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'desc' }]);
+const sortBy = ref<Array<{ key: string; order: 'asc' | 'desc' }>>([{ key: 'id', order: 'desc' }]);
 
 const filtroEstadoTabla = ref('todos');
 
 const headers = [
-  { title: 'ID', key: 'id', sortable: false },
+  // CAMBIO: La primera columna ahora es 'ID' y su key es 'id'
+  { title: 'ID', key: 'id', sortable: false }, // La clave es 'id' para que el slot la capture
   { title: 'Nombre', key: 'nombre', sortable: false },
   { title: 'NIT', key: 'nit', sortable: false },
   { title: 'Correo', key: 'correo', sortable: false },
@@ -196,12 +198,8 @@ const headers = [
   { title: 'Acciones', key: 'actions', sortable: false },
 ];
 
-const sortByIdAsc = () => {
-  sortBy.value = [{ key: 'id', order: 'asc' }];
-};
-
-const sortByIdDesc = () => {
-  sortBy.value = [{ key: 'id', order: 'desc' }];
+const setSortOrder = (order: 'asc' | 'desc') => {
+  sortBy.value = [{ key: 'id', order: order }];
 };
 
 watch(filtroEstadoTabla, async (newVal) => {
@@ -225,11 +223,43 @@ async function cargarEmpresas(estadoFiltro?: string) {
   }
 }
 
-const filteredEmpresas = computed(() =>
-  empresas.value.filter((e) =>
-    Object.values(e).some((val) => String(val).trim().toLowerCase().includes(search.value.toLowerCase()))
-  )
-);
+// processedEmpresas se encarga de filtrar Y ORDENAR
+const processedEmpresas = computed(() => {
+  let items = [...empresas.value]; 
+
+  if (filtroEstadoTabla.value !== 'todos') {
+    items = items.filter(e => e.estado === filtroEstadoTabla.value);
+  }
+
+  if (search.value) {
+    const searchTerm = search.value.toLowerCase().trim();
+    items = items.filter(e =>
+      Object.values(e).some((val) => String(val).trim().toLowerCase().includes(searchTerm))
+    );
+  }
+
+  if (sortBy.value && sortBy.value.length > 0) {
+    const sortKey = sortBy.value[0].key;
+    const sortOrder = sortBy.value[0].order;
+
+    items.sort((a, b) => {
+      let valA = a[sortKey];
+      let valB = b[sortKey];
+
+      if (valA === null || valA === undefined) valA = '';
+      if (valB === null || valB === undefined) valB = '';
+
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      } else {
+        return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
+      }
+    });
+  }
+  
+  return items;
+});
+
 
 function editEmpresa(empresa: any) {
   isEditing.value = true;
@@ -392,5 +422,17 @@ function resetForm() {
 <style scoped>
 .form {
   padding: 1rem;
+}
+.text-h5 {
+  color: #1976D2;
+  font-weight: bold;
+}
+.text-h6 {
+  color: #1976D2;
+  font-weight: bold;
+}
+/* Estilos para que los botones de toggle se vean bien sin texto */
+.v-btn-toggle .v-btn {
+  min-width: 44px; /* Asegura un tamaño mínimo para que el ícono se vea bien */
 }
 </style>

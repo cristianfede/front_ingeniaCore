@@ -1,3 +1,118 @@
+<template>
+  <v-container class="py-5">
+    <v-card class="mb-5" outlined>
+      <v-card-title class="text-h5 text-center">Asignar Proyectos</v-card-title>
+      <v-card-text>
+        <!-- Alerta general para el formulario -->
+        <v-alert
+          v-if="showFormAlert"
+          type="warning"
+          variant="tonal"
+          class="mb-4"
+          closable
+          v-model="showFormAlert"
+        >
+          {{ formAlertMessage }}
+        </v-alert>
+
+        <v-form ref="form" @submit.prevent="submitForm" class="form" style="color: black">
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-text-field
+                label="Nombre del proyecto"
+                v-model="nombre"
+                required
+                outlined
+                :rules="[rules.required, rules.minLength, rules.maxLength, validateNombreProyectoUnico]" 
+                :error-messages="validationErrors.nombre"
+              />
+            </v-col>
+
+            <v-col cols="12" md="6">
+              <v-select
+                label="Empresa"
+                :items="empresas"
+                item-value="id"
+                item-title="nombre"
+                v-model="empresa_id"
+                required
+                outlined
+                :rules="[rules.empresaRequired]"
+                :error-messages="validationErrors.empresa_id"
+              />
+            </v-col>
+          </v-row>
+
+          <div class="d-flex justify-start">
+            <v-btn v-if="isEditing" color="secondary" @click="resetForm" class="mr-2">Cancelar</v-btn>
+            <v-btn v-if="!isEditing" color="grey" text @click="resetForm" class="mr-2">Limpiar</v-btn>
+            <v-btn color="primary" type="submit">Guardar Proyecto</v-btn>
+          </div>
+        </v-form>
+
+      </v-card-text>
+    </v-card>
+    <v-card outlined>
+      <v-card-title class="text-h6">Listado de Proyectos</v-card-title>
+      <v-row align="center" class="px-4 pb-4">
+        <v-col cols="12" sm="6" md="5" lg="4">
+          <v-text-field v-model="search" label="Buscar proyecto" prepend-inner-icon="mdi-magnify" outlined dense hide-details />
+        </v-col>
+        <v-col cols="12" sm="6" md="7" lg="8" class="d-flex justify-start">
+          <!-- Botones de ordenamiento ahora son solo flechas con estilo primario -->
+          <v-btn-toggle v-model="sortBy[0].order" mandatory variant="elevated" color="primary">
+            <v-btn value="asc" class="pa-2">
+              <v-icon>mdi-sort-ascending</v-icon>
+            </v-btn>
+            <v-btn value="desc" class="pa-2">
+              <v-icon>mdi-sort-descending</v-icon>
+            </v-btn>
+          </v-btn-toggle>
+        </v-col>
+      </v-row>
+
+      <v-data-table
+        :headers="headers"
+        :items="filteredProyectos"
+        item-value="id"
+        v-model:sort-by="sortBy"
+        class="elevation-1"
+      >
+        <template v-slot:item.actions="{ item }">
+          <v-btn icon @click="editProyecto(item)" class="mr-1">
+            <v-icon color="primary">mdi-pencil</v-icon>
+          </v-btn>
+          <v-btn icon @click="handleDeleteProyecto(item.id)">
+            <v-icon color="red">mdi-delete</v-icon>
+          </v-btn>
+        </template>
+        <template v-slot:no-data>
+          <v-alert :value="true" color="info" icon="mdi-information">
+            No hay proyectos disponibles.
+          </v-alert>
+        </template>
+      </v-data-table>
+    </v-card>
+
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
+      {{ snackbar.message }}
+      <template #actions>
+        <v-btn text @click="snackbar.show = false">Cerrar</v-btn>
+      </template>
+    </v-snackbar>
+
+    <ConfirmDialog
+      v-model="showConfirmDialog"
+      :title="confirmDialogTitle"
+      :message="confirmDialogMessage"
+      :confirm-text="confirmDialogConfirmText"
+      :confirm-color="confirmDialogConfirmColor"
+      @confirm="handleConfirmAction"
+      @cancel="handleCancelAction"
+    />
+  </v-container>
+</template>
+
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 // Asegúrate de que la ruta a tu servicio es correcta
@@ -48,9 +163,9 @@ const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }]); // Ordenar por 
 
 // Cabeceras para la tabla
 const headers = [
-  { title: 'ID', key: 'id' },
-  { title: 'Empresa', key: 'empresa.nombre' },
-  { title: 'Nombre del Proyecto', key: 'nombre' },
+  { title: 'ID', key: 'id', sortable: false }, // CAMBIO AQUÍ: sortable es false para quitar la flecha
+  { title: 'Empresa', key: 'empresa.nombre', sortable: false }, // CAMBIO AQUÍ: sortable es false
+  { title: 'Nombre del Proyecto', key: 'nombre', sortable: false }, // CAMBIO AQUÍ: sortable es false
   { title: 'Acciones', key: 'actions', sortable: false },
 ]
 
@@ -259,14 +374,48 @@ onMounted(() => {
 });
 
 // Filtrar proyectos por búsqueda
-const filteredProyectos = computed(() =>
-  proyectos.value.filter(p =>
-    (p.nombre?.toLowerCase()?.includes(search.value.toLowerCase()) || false) ||
-    (p.empresa?.nombre?.toLowerCase()?.includes(search.value.toLowerCase()) || false)
-  )
-);
+const filteredProyectos = computed(() => {
+  let items = [...proyectos.value]; // Copia el array original
+
+  // Filtrar por texto de búsqueda
+  if (search.value) {
+    const searchTerm = search.value.toLowerCase().trim();
+    items = items.filter(p =>
+      (p.nombre?.toLowerCase()?.includes(searchTerm) || false) ||
+      (p.empresa?.nombre?.toLowerCase()?.includes(searchTerm) || false)
+    );
+  }
+
+  // Aplicar el ordenamiento (definido por sortBy)
+  if (sortBy.value && sortBy.value.length > 0) {
+    const sortKey = sortBy.value[0].key;
+    const sortOrder = sortBy.value[0].order;
+
+    items.sort((a, b) => {
+      let valA = getValueByKey(a, sortKey);
+      let valB = getValueByKey(b, sortKey);
+
+      // Manejar valores nulos o indefinidos para evitar errores de comparación
+      if (valA === null || valA === undefined) valA = '';
+      if (valB === null || valB === undefined) valB = '';
+
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      } else {
+        return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
+      }
+    });
+  }
+  return items;
+});
+
+// Helper function to get nested object values
+function getValueByKey(obj: any, key: string): any {
+  return key.split('.').reduce((o, i) => (o ? o[i] : undefined), obj);
+}
 
 // Funciones para ordenar la tabla
+// Ahora simplemente actualizan el `sortBy` y el computed `filteredProyectos` hará el resto.
 const sortByIdAsc = () => {
   sortBy.value = [{ key: 'id', order: 'asc' }];
 };
@@ -276,120 +425,30 @@ const sortByIdDesc = () => {
 };
 </script>
 
-<template>
-  <v-container class="py-5">
-    <v-card class="mb-5" outlined>
-      <v-card-title class="text-h5 text-center">Asignar Proyectos</v-card-title>
-      <v-card-text>
-        <!-- Alerta general para el formulario -->
-        <v-alert
-          v-if="showFormAlert"
-          type="warning"
-          variant="tonal"
-          class="mb-4"
-          closable
-          v-model="showFormAlert"
-        >
-          {{ formAlertMessage }}
-        </v-alert>
-
-        <v-form ref="form" @submit.prevent="submitForm" class="form" style="color: black">
-          <v-row>
-            <v-col cols="12" md="6">
-              <v-text-field
-                label="Nombre del proyecto"
-                v-model="nombre"
-                required
-                outlined
-                :rules="[rules.required, rules.minLength, rules.maxLength, validateNombreProyectoUnico]" 
-                :error-messages="validationErrors.nombre"
-              />
-            </v-col>
-
-            <v-col cols="12" md="6">
-              <v-select
-                label="Empresa"
-                :items="empresas"
-                item-value="id"
-                item-title="nombre"
-                v-model="empresa_id"
-                required
-                outlined
-                :rules="[rules.empresaRequired]"
-                :error-messages="validationErrors.empresa_id"
-              />
-            </v-col>
-          </v-row>
-
-          <div class="d-flex justify-start">
-            <v-btn v-if="isEditing" color="secondary" @click="resetForm" class="mr-2">Cancelar</v-btn>
-            <v-btn v-if="!isEditing" color="grey" text @click="resetForm" class="mr-2">Limpiar</v-btn>
-            <v-btn color="primary" type="submit">Guardar Proyecto</v-btn>
-          </div>
-        </v-form>
-
-      </v-card-text>
-    </v-card>
-    <v-card outlined>
-      <v-card-title class="text-h6">Listado de Proyectos</v-card-title>
-      <v-row align="center" class="px-4 pb-4">
-        <v-col cols="12" sm="6" md="5" lg="4">
-          <v-text-field v-model="search" label="Buscar proyecto" prepend-inner-icon="mdi-magnify" outlined dense hide-details />
-        </v-col>
-        <v-col cols="12" sm="6" md="7" lg="8" class="d-flex justify-start">
-          <v-btn small @click="sortByIdAsc" class="mr-2" color="#1976D2" dark>
-            <v-icon left>mdi-sort-ascending</v-icon> Más Antiguos
-          </v-btn>
-          <v-btn small @click="sortByIdDesc" color="#1976D2" dark>
-            <v-icon left>mdi-sort-descending</v-icon> Más Recientes
-          </v-btn>
-        </v-col>
-      </v-row>
-
-      <v-data-table
-        :headers="headers"
-        :items="filteredProyectos"
-        item-value="id"
-        v-model:sort-by="sortBy"
-        class="elevation-1"
-      >
-        <template v-slot:item.actions="{ item }">
-          <v-btn icon @click="editProyecto(item)" class="mr-1">
-            <v-icon color="primary">mdi-pencil</v-icon>
-          </v-btn>
-          <v-btn icon @click="handleDeleteProyecto(item.id)">
-            <v-icon color="red">mdi-delete</v-icon>
-          </v-btn>
-        </template>
-        <template v-slot:no-data>
-          <v-alert :value="true" color="info" icon="mdi-information">
-            No hay proyectos disponibles.
-          </v-alert>
-        </template>
-      </v-data-table>
-    </v-card>
-
-    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-      {{ snackbar.message }}
-      <template #actions>
-        <v-btn text @click="snackbar.show = false">Cerrar</v-btn>
-      </template>
-    </v-snackbar>
-
-    <ConfirmDialog
-      v-model="showConfirmDialog"
-      :title="confirmDialogTitle"
-      :message="confirmDialogMessage"
-      :confirm-text="confirmDialogConfirmText"
-      :confirm-color="confirmDialogConfirmColor"
-      @confirm="handleConfirmAction"
-      @cancel="handleCancelAction"
-    />
-  </v-container>
-</template>
-
 <style scoped>
 .form {
   padding: 1rem;
+}
+.text-h5 {
+  color: #1976D2;
+  font-weight: bold;
+}
+.text-h6 {
+  color: #1976D2;
+  font-weight: bold;
+}
+/* Estilos para que los botones de toggle se vean bien sin texto */
+.v-btn-toggle .v-btn {
+  min-width: 44px; /* Asegura un tamaño mínimo para que el ícono se vea bien */
+}
+
+/* Estilo para controlar la altura de las filas de la tabla */
+.v-data-table tbody tr {
+  height: 48px; /* O el valor que consideres apropiado */
+  min-height: 48px;
+}
+/* Asegurarse de que las celdas también tengan un padding consistente */
+.v-data-table tbody td {
+  padding: 8px 16px;
 }
 </style>

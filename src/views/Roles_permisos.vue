@@ -1,5 +1,174 @@
+<template>
+    <v-container class="py-5">
+        <v-card class="mb-5" outlined>
+            <v-card-title class="text-h5 text-center"> Gestión de Asignación de Permisos </v-card-title>
+
+            <v-card-text>
+                <v-form @submit.prevent="submitForm" class="form" style="color: black">
+                    <v-row>
+                        <v-col cols="12" md="6">
+                            <v-select
+                                v-model="selectedRolId"
+                                :items="roles"
+                                item-title="nombre"
+                                item-value="id"
+                                label="Seleccionar Rol"
+                                :rules="[v => v !== null || 'Rol es requerido']"
+                                required
+                                variant="outlined"
+                                :disabled="!!editingAssignment" ></v-select>
+                        </v-col>
+                        <v-col cols="12" md="6">
+                            <v-select
+                                v-model="selectedItem"
+                                :items="items"
+                                item-title="nombre"
+                                item-value="id"
+                                label="Seleccionar Ítem Específico (Opcional)"
+                                clearable
+                                variant="outlined"
+                            ></v-select>
+                        </v-col>
+                    </v-row>
+
+                    <v-row>
+                        <v-col cols="12" md="6">
+                            <v-card class="pa-4 elevation-1">
+                                <v-card-title class="text-subtitle1">Permisos Generales:</v-card-title>
+                                <v-list dense>
+                                    <v-list-item v-for="permiso in permisos" :key="permiso.id">
+                                        <v-checkbox
+                                            v-model="selectedPermisos"
+                                            :label="permiso.nombre"
+                                            :value="permiso.id"
+                                            hide-details
+                                            density="compact"
+                                        ></v-checkbox>
+                                    </v-list-item>
+                                </v-list>
+                            </v-card>
+                        </v-col>
+                        <v-col cols="12" md="6">
+                            <v-card class="pa-4 elevation-1">
+                                <v-card-title class="text-subtitle1">Vistas Asignables (Permiso 'leer' a estas Vistas):</v-card-title>
+                                <v-list dense>
+                                    <v-list-item v-for="item in items" :key="item.id">
+                                        <v-checkbox
+                                            v-model="selectedVistas"
+                                            :label="item.nombre"
+                                            :value="item.id"
+                                            hide-details
+                                            density="compact"
+                                        ></v-checkbox>
+                                    </v-list-item>
+                                </v-list>
+                            </v-card>
+                        </v-col>
+                    </v-row>
+
+                    <v-row class="mt-4">
+                        <v-col class="d-flex justify-start">
+                            <v-btn color="grey" text @click="resetForm" class="mr-2">
+                                {{ editingAssignment ? 'Cancelar Edición' : 'Limpiar Formulario' }}
+                            </v-btn>
+                            <v-btn color="primary" type="submit">
+                                {{ editingAssignment ? 'Actualizar Asignación' : 'Asignar Permisos' }}
+                            </v-btn>
+                        </v-col>
+                    </v-row>
+                </v-form>
+            </v-card-text>
+        </v-card>
+
+        <v-card outlined>
+            <v-card-title class="text-h6">
+                Asignaciones Existentes para el Rol Seleccionado
+            </v-card-title>
+            
+            <v-row align="center" class="px-4 pb-4">
+                <v-col cols="12" sm="6" md="5" lg="4"> 
+                    <v-text-field 
+                        v-model="search" 
+                        label="Buscar asignaciones" 
+                        prepend-inner-icon="mdi-magnify" 
+                        outlined 
+                        dense 
+                        hide-details 
+                    />
+                </v-col>
+                
+                <v-col cols="12" sm="6" md="7" lg="8" class="d-flex justify-start"> 
+                    <!-- Botones de ordenamiento ahora son solo flechas con estilo primario -->
+                    <v-btn-toggle v-model="sortBy[0].order" mandatory variant="elevated" color="primary">
+                        <v-btn value="asc" class="pa-2">
+                            <v-icon>mdi-sort-ascending</v-icon>
+                        </v-btn>
+                        <v-btn value="desc" class="pa-2">
+                            <v-icon>mdi-sort-descending</v-icon>
+                        </v-btn>
+                    </v-btn-toggle>
+                </v-col>
+            </v-row>
+
+            <v-data-table
+                :headers="headers"
+                :items="filteredAsignaciones"
+                item-value="id"
+                class="elevation-1"
+                :loading="loadingAsignaciones"
+                loading-text="Cargando asignaciones..."
+                :no-data-text="noDataText"
+                v-model:sort-by="sortBy"
+            >
+                <template v-slot:item.rol="{ item }">
+                    {{ item.rol ? item.rol.nombre : 'N/A' }}
+                </template>
+                <template v-slot:item.item="{ item }">
+                    {{ item.item ? item.item.nombre : 'Global' }}
+                </template>
+                <template v-slot:item.permiso="{ item }">
+                    {{ item.permiso ? item.permiso.nombre : 'N/A' }}
+                </template>
+
+                <template v-slot:item.acciones="{ item }">
+                    <v-btn icon @click="editAsignacion(item)" class="mr-1">
+                        <v-icon color="blue">mdi-pencil</v-icon>
+                    </v-btn>
+                    <v-btn icon @click="deleteAsignacionConfirm(item)">
+                        <v-icon color="red">mdi-delete</v-icon>
+                    </v-btn>
+                </template>
+            </v-data-table>
+        </v-card>
+
+        <v-dialog v-model="dialogDelete" max-width="500px">
+            <v-card>
+                <v-card-title class="text-h5 text-center">¿Estás seguro de eliminar esta asignación?</v-card-title>
+                <v-card-text class="text-center">Esta acción no se puede deshacer.</v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="blue-darken-1" variant="text" @click="closeDelete">Cancelar</v-btn>
+                    <v-btn color="red-darken-1" variant="text" @click="deleteAsignacionConfirmado">Eliminar</v-btn>
+                    <v-spacer></v-spacer>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <v-snackbar
+            v-model="showAlertMessage"
+            :color="alertType"
+            timeout="3000"
+        >
+            {{ alertMessage }}
+            <template #actions>
+                <v-btn text @click="showAlertMessage = false">Cerrar</v-btn>
+            </template>
+        </v-snackbar>
+    </v-container>
+</template>
+
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 // Asegúrate de que la ruta sea correcta según tu estructura de carpetas
 import RolesPermisosService, { Rol, Permiso, Item, AsignacionPermiso, CreateAsignacionData } from '../services/Roles_permisosService';
 
@@ -30,9 +199,10 @@ const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }]);
 
 // Headers de la tabla
 const headers = [
-    { title: 'Rol', key: 'rol.nombre' },
-    { title: 'Permiso', key: 'permiso.nombre' },
-    { title: 'Ítem', key: 'item.nombre' }, // Muestra "Global" si item_id es null
+    { title: 'ID', key: 'id', sortable: false }, // CAMBIO: sortable: false para quitar la flecha
+    { title: 'Rol', key: 'rol.nombre', sortable: true }, // Ahora sortable: true
+    { title: 'Permiso', key: 'permiso.nombre', sortable: true }, // Ahora sortable: true
+    { title: 'Ítem', key: 'item.nombre', sortable: true }, // Ahora sortable: true
     { title: 'Acciones', key: 'acciones', sortable: false },
 ];
 
@@ -60,16 +230,45 @@ const noDataText = computed(() => {
 });
 
 const filteredAsignaciones = computed(() => {
+    let items = [...asignaciones.value]; // Crear una copia para ordenar
+
     if (!search.value) {
-        return asignaciones.value;
+        return items;
     }
     const lowerCaseSearch = search.value.toLowerCase();
-    return asignaciones.value.filter(asignacion =>
+    items = items.filter(asignacion =>
         (asignacion.rol?.nombre || '').toLowerCase().includes(lowerCaseSearch) ||
         (asignacion.item?.nombre || 'global').toLowerCase().includes(lowerCaseSearch) || 
         (asignacion.permiso?.nombre || '').toLowerCase().includes(lowerCaseSearch)
     );
+
+    // Aplicar el ordenamiento (copiado de otras vistas para consistencia)
+    if (sortBy.value && sortBy.value.length > 0) {
+        const sortKey = sortBy.value[0].key;
+        const sortOrder = sortBy.value[0].order;
+
+        items.sort((a, b) => {
+            let valA = getValueByKey(a, sortKey);
+            let valB = getValueByKey(b, sortKey);
+
+            if (valA === null || valA === undefined) valA = '';
+            if (valB === null || valB === undefined) valB = '';
+
+            if (typeof valA === 'string' && typeof valB === 'string') {
+                return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            } else {
+                return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
+            }
+        });
+    }
+
+    return items;
 });
+
+// Helper function to get nested object values
+function getValueByKey(obj: any, key: string): any {
+  return key.split('.').reduce((o, i) => (o ? o[i] : undefined), obj);
+}
 
 // --- Funciones de Utilidad y Alertas ---
 const showAlert = (message: string, type: 'success' | 'error' | 'info') => {
@@ -342,172 +541,6 @@ watch(selectedRolId, async (newRolId) => {
 });
 </script>
 
-<template>
-    <v-container class="py-5">
-        <v-card class="mb-5" outlined>
-            <v-card-title class="text-h5 text-center"> Gestión de Asignación de Permisos </v-card-title>
-
-            <v-card-text>
-                <v-form @submit.prevent="submitForm" class="form" style="color: black">
-                    <v-row>
-                        <v-col cols="12" md="6">
-                            <v-select
-                                v-model="selectedRolId"
-                                :items="roles"
-                                item-title="nombre"
-                                item-value="id"
-                                label="Seleccionar Rol"
-                                :rules="[v => v !== null || 'Rol es requerido']"
-                                required
-                                variant="outlined"
-                                :disabled="!!editingAssignment" ></v-select>
-                        </v-col>
-                        <v-col cols="12" md="6">
-                            <v-select
-                                v-model="selectedItem"
-                                :items="items"
-                                item-title="nombre"
-                                item-value="id"
-                                label="Seleccionar Ítem Específico (Opcional)"
-                                clearable
-                                variant="outlined"
-                            ></v-select>
-                        </v-col>
-                    </v-row>
-
-                    <v-row>
-                        <v-col cols="12" md="6">
-                            <v-card class="pa-4 elevation-1">
-                                <v-card-title class="text-subtitle1">Permisos Generales:</v-card-title>
-                                <v-list dense>
-                                    <v-list-item v-for="permiso in permisos" :key="permiso.id">
-                                        <v-checkbox
-                                            v-model="selectedPermisos"
-                                            :label="permiso.nombre"
-                                            :value="permiso.id"
-                                            hide-details
-                                            density="compact"
-                                        ></v-checkbox>
-                                    </v-list-item>
-                                </v-list>
-                            </v-card>
-                        </v-col>
-                        <v-col cols="12" md="6">
-                            <v-card class="pa-4 elevation-1">
-                                <v-card-title class="text-subtitle1">Vistas Asignables (Permiso 'leer' a estas Vistas):</v-card-title>
-                                <v-list dense>
-                                    <v-list-item v-for="item in items" :key="item.id">
-                                        <v-checkbox
-                                            v-model="selectedVistas"
-                                            :label="item.nombre"
-                                            :value="item.id"
-                                            hide-details
-                                            density="compact"
-                                        ></v-checkbox>
-                                    </v-list-item>
-                                </v-list>
-                            </v-card>
-                        </v-col>
-                    </v-row>
-
-                    <v-row class="mt-4">
-                        <v-col class="d-flex justify-start">
-                            <v-btn color="grey" text @click="resetForm" class="mr-2">
-                                {{ editingAssignment ? 'Cancelar Edición' : 'Limpiar Formulario' }}
-                            </v-btn>
-                            <v-btn color="primary" type="submit">
-                                {{ editingAssignment ? 'Actualizar Asignación' : 'Asignar Permisos' }}
-                            </v-btn>
-                        </v-col>
-                    </v-row>
-                </v-form>
-            </v-card-text>
-        </v-card>
-
-        <v-card outlined>
-            <v-card-title class="text-h6">
-                Asignaciones Existentes para el Rol Seleccionado
-            </v-card-title>
-            
-            <v-row align="center" class="px-4 pb-4">
-                <v-col cols="12" sm="6" md="5" lg="4"> 
-                    <v-text-field 
-                        v-model="search" 
-                        label="Buscar asignaciones" 
-                        prepend-inner-icon="mdi-magnify" 
-                        outlined 
-                        dense 
-                        hide-details 
-                    />
-                </v-col>
-                
-                <v-col cols="12" sm="6" md="7" lg="8" class="d-flex justify-start"> 
-                    <v-btn small @click="sortByIdAsc" class="mr-2" color="#1976D2" dark>
-                        <v-icon left>mdi-sort-ascending</v-icon> Más Antiguos
-                    </v-btn>
-                    <v-btn small @click="sortByIdDesc" color="#1976D2" dark>
-                        <v-icon left>mdi-sort-descending</v-icon> Más Recientes
-                    </v-btn>
-                </v-col>
-            </v-row>
-
-            <v-data-table
-                :headers="headers"
-                :items="filteredAsignaciones"
-                item-value="id"
-                class="elevation-1"
-                :loading="loadingAsignaciones"
-                loading-text="Cargando asignaciones..."
-                :no-data-text="noDataText"
-                v-model:sort-by="sortBy"
-            >
-                <template v-slot:item.rol="{ item }">
-                    {{ item.rol ? item.rol.nombre : 'N/A' }}
-                </template>
-                <template v-slot:item.item="{ item }">
-                    {{ item.item ? item.item.nombre : 'Global' }}
-                </template>
-                <template v-slot:item.permiso="{ item }">
-                    {{ item.permiso ? item.permiso.nombre : 'N/A' }}
-                </template>
-
-                <template v-slot:item.acciones="{ item }">
-                    <v-btn icon @click="editAsignacion(item)" class="mr-1">
-                        <v-icon color="blue">mdi-pencil</v-icon>
-                    </v-btn>
-                    <v-btn icon @click="deleteAsignacionConfirm(item)">
-                        <v-icon color="red">mdi-delete</v-icon>
-                    </v-btn>
-                </template>
-            </v-data-table>
-        </v-card>
-
-        <v-dialog v-model="dialogDelete" max-width="500px">
-            <v-card>
-                <v-card-title class="text-h5 text-center">¿Estás seguro de eliminar esta asignación?</v-card-title>
-                <v-card-text class="text-center">Esta acción no se puede deshacer.</v-card-text>
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn color="blue-darken-1" variant="text" @click="closeDelete">Cancelar</v-btn>
-                    <v-btn color="red-darken-1" variant="text" @click="deleteAsignacionConfirmado">Eliminar</v-btn>
-                    <v-spacer></v-spacer>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
-
-        <v-snackbar
-            v-model="showAlertMessage"
-            :color="alertType"
-            timeout="3000"
-        >
-            {{ alertMessage }}
-            <template #actions>
-                <v-btn text @click="showAlertMessage = false">Cerrar</v-btn>
-            </template>
-        </v-snackbar>
-    </v-container>
-</template>
-
 <style scoped>
 /* Tu estilo específico para este componente */
 .form {
@@ -525,5 +558,18 @@ watch(selectedRolId, async (newRolId) => {
 .text-subtitle1 {
     color: #1976D2; /* Color de ejemplo, ajusta a tu tema */
     font-weight: bold;
+}
+/* Estilos para que los botones de toggle se vean bien sin texto */
+.v-btn-toggle .v-btn {
+  min-width: 44px; /* Asegura un tamaño mínimo para que el ícono se vea bien */
+}
+/* Estilo para controlar la altura de las filas de la tabla */
+.v-data-table tbody tr {
+  height: 48px; /* O el valor que consideres apropiado */
+  min-height: 48px;
+}
+/* Asegurarse de que las celdas también tengan un padding consistente */
+.v-data-table tbody td {
+  padding: 8px 16px;
 }
 </style>

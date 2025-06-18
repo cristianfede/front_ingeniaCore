@@ -1,8 +1,150 @@
+<template>
+  <v-container class="py-5">
+    <v-card class="mb-5" outlined>
+      <v-card-title class="text-h5 text-center">Gestión de Roles</v-card-title>
+      <v-card-text>
+        <v-alert
+          v-if="showFormAlert"
+          type="warning"
+          variant="tonal"
+          class="mb-4"
+          closable
+          v-model="showFormAlert"
+        >
+          {{ formAlertMessage }}
+        </v-alert>
+
+        <v-form ref="form" @submit.prevent="submitForm" class="form" style="color: black">
+          <v-row>
+            <v-col cols="12">
+              <v-text-field
+                label="Nombre del Rol"
+                v-model="nombre"
+                required
+                outlined
+                clearable
+                :error-messages="validationErrors.nombre" 
+                :rules="[rules.required, rules.minLength, rules.maxLength, validateNombreRolUnico]" />
+            </v-col>
+            <v-col cols="12">
+              <v-text-field
+                label="Descripción del Rol"
+                v-model="descripcion"
+                outlined
+                counter
+                clearable
+                maxlength="255"
+                hint="Proporciona una breve descripción del rol. (Máx. 255 caracteres)"
+                :error-messages="validationErrors.descripcion"
+                :rules="[rules.descriptionMaxLength]"
+              />
+            </v-col>
+            <v-col cols="12" v-if="isEditing">
+              <v-select
+                label="Estado del Rol"
+                v-model="estado"
+                :items="['activo', 'inactivo']"
+                outlined
+                required
+                :error-messages="validationErrors.estado"
+                :rules="[rules.estadoRequired]"
+              ></v-select>
+            </v-col>
+          </v-row>
+
+          <div class="d-flex justify-start">
+            <v-btn v-if="isEditing" color="secondary" @click="resetForm" class="mr-2">Cancelar Edición</v-btn>
+            <v-btn v-if="!isEditing" color="grey" text @click="resetForm" class="mr-2">Limpiar Formulario</v-btn>
+            <v-btn color="primary" type="submit">{{ isEditing ? 'Actualizar Rol' : 'Crear Rol' }}</v-btn>
+          </div>
+        </v-form>
+      </v-card-text>
+    </v-card>
+
+    <v-card outlined>
+      <v-card-title class="text-h6">Listado de Roles</v-card-title>
+      <v-row align="center" class="px-4 pb-4">
+        <v-col cols="12" sm="6" md="4" lg="3">
+          <v-text-field v-model="search" label="Buscar rol" prepend-inner-icon="mdi-magnify" outlined dense hide-details />
+        </v-col>
+        <v-col cols="12" sm="6" md="4" lg="3">
+          <v-select
+            v-model="filtroEstadoTabla"
+            :items="[{ title: 'Activos', value: 'activo' }, { title: 'Inactivos', value: 'inactivo' }, { title: 'Todos', value: 'todos' }]"
+            label="Filtrar por Estado"
+            outlined
+            dense
+            hide-details
+          ></v-select>
+        </v-col>
+        <v-col cols="12" sm="6" md="4" lg="6" class="d-flex justify-start">
+          <!-- Botones de ordenamiento ahora son solo flechas con estilo primario -->
+          <v-btn-toggle v-model="sortBy[0].order" mandatory variant="elevated" color="primary">
+            <v-btn value="asc" class="pa-2">
+              <v-icon>mdi-sort-ascending</v-icon>
+            </v-btn>
+            <v-btn value="desc" class="pa-2">
+              <v-icon>mdi-sort-descending</v-icon>
+            </v-btn>
+          </v-btn-toggle>
+        </v-col>
+      </v-row>
+
+      <v-data-table
+        :headers="headers"
+        :items="filteredRoles" item-value="id"
+        v-model:sort-by="sortBy"
+        class="elevation-1"
+      >
+        <template v-slot:item.estado="{ item }">
+          <v-chip :color="item.estado === 'activo' ? 'green' : 'red'" variant="flat" size="small">
+            {{ item.estado === 'activo' ? 'Activo' : 'Inactivo' }}
+          </v-chip>
+        </template>
+
+        <template v-slot:item.actions="{ item }">
+          <v-btn icon @click="editRol(item)" class="mr-1" :disabled="item.estado === 'inactivo'">
+            <v-icon color="primary">mdi-pencil</v-icon>
+          </v-btn>
+          <v-btn icon @click="handleDeleteRol(item.id)" v-if="item.estado === 'activo'">
+            <v-icon color="red">mdi-delete</v-icon>
+          </v-btn>
+          <v-btn icon @click="handleActivateRol(item.id)" v-else>
+            <v-icon color="success">mdi-check-circle</v-icon>
+          </v-btn>
+          <v-btn icon @click="handleDeletePermanentlyRol(item.id)" class="ml-1">
+            <v-icon color="grey darken-2">mdi-eraser</v-icon> </v-btn>
+        </template>
+        <template v-slot:no-data>
+          <v-alert :value="true" color="info" icon="mdi-information">
+            No hay roles disponibles.
+          </v-alert>
+        </template>
+      </v-data-table>
+    </v-card>
+
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
+      {{ snackbar.message }}
+      <template #actions>
+        <v-btn text @click="snackbar.show = false">Cerrar</v-btn>
+      </template>
+    </v-snackbar>
+
+    <ConfirmDialog
+      v-model="showConfirmDialog"
+      :title="confirmDialogTitle"
+      :message="confirmDialogMessage"
+      :confirm-text="confirmDialogConfirmText"
+      :confirm-color="confirmDialogConfirmColor"
+      @confirm="handleConfirmAction"
+      @cancel="handleCancelAction"
+    />
+  </v-container>
+</template>
+
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-// Asegúrate de que la ruta a tu servicio es correcta
+import { ref, onMounted, computed, watch } from 'vue';
 import { obtenerRoles, crearRol, actualizarRol, eliminarRolPermanentemente, verificarNombreRolUnico, inactivarRol, activarRol } from '../services/CreacionRoles' // <-- Importa verificarNombreRolUnico y las funciones de estado si las usas directamente
-// Asegúrate de que la ruta a tu componente de diálogo es correcta
 import ConfirmDialog from '../components/Confirmardialogo.vue';
 
 // Para el formulario de Vuetify. Permite acceder a métodos como `validate()` y `resetValidation()`.
@@ -33,7 +175,7 @@ const snackbar = ref({
 });
 const showConfirmDialog = ref(false);
 const confirmDialogTitle = ref('');
-const confirmDialogMessage = ref('');
+const confirmDialogMessage = '';
 const confirmDialogConfirmText = ref('');
 const confirmDialogConfirmColor = ref('');
 const currentAction = ref('');
@@ -50,10 +192,10 @@ const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }]);
 const filtroEstadoTabla = ref('activo');
 
 const headers = [
-  { title: 'ID', key: 'id' },
-  { title: 'Nombre del Rol', key: 'nombre' },
-  { title: 'Descripción', key: 'descripcion' },
-  { title: 'Estado', key: 'estado' },
+  { title: 'ID', key: 'id', sortable: false }, // Se mantiene sin flecha de ordenamiento
+  { title: 'Nombre del Rol', key: 'nombre', sortable: false }, // CAMBIO: sortable: false
+  { title: 'Descripción', key: 'descripcion', sortable: false }, // CAMBIO: sortable: false
+  { title: 'Estado', key: 'estado', sortable: false }, // CAMBIO: sortable: false
   { title: 'Acciones', key: 'actions', sortable: false },
 ]
 
@@ -295,8 +437,30 @@ const filteredRoles = computed(() => {
     rolesFiltrados = rolesFiltrados.filter(r => r.estado === 'inactivo');
   }
 
+  // Aplicar el ordenamiento
+  if (sortBy.value && sortBy.value.length > 0) {
+    const sortKey = sortBy.value[0].key;
+    const sortOrder = sortBy.value[0].order;
+
+    rolesFiltrados.sort((a, b) => {
+      let valA = a[sortKey];
+      let valB = b[sortKey];
+
+      // Manejar valores nulos o indefinidos para evitar errores de comparación
+      if (valA === null || valA === undefined) valA = '';
+      if (valB === null || valB === undefined) valB = '';
+
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      } else {
+        return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
+      }
+    });
+  }
+
   return rolesFiltrados;
 });
+
 
 const sortByIdAsc = () => {
   sortBy.value = [{ key: 'id', order: 'asc' }];
@@ -307,147 +471,6 @@ const sortByIdDesc = () => {
 };
 </script>
 
-<template>
-  <v-container class="py-5">
-    <v-card class="mb-5" outlined>
-      <v-card-title class="text-h5 text-center">Gestión de Roles</v-card-title>
-      <v-card-text>
-        <v-alert
-          v-if="showFormAlert"
-          type="warning"
-          variant="tonal"
-          class="mb-4"
-          closable
-          v-model="showFormAlert"
-        >
-          {{ formAlertMessage }}
-        </v-alert>
-
-        <v-form ref="form" @submit.prevent="submitForm" class="form" style="color: black">
-          <v-row>
-            <v-col cols="12">
-              <v-text-field
-                label="Nombre del Rol"
-                v-model="nombre"
-                required
-                outlined
-                clearable
-                :error-messages="validationErrors.nombre" 
-                :rules="[rules.required, rules.minLength, rules.maxLength, validateNombreRolUnico]" />
-            </v-col>
-            <v-col cols="12">
-              <v-text-field
-                label="Descripción del Rol"
-                v-model="descripcion"
-                outlined
-                counter
-                clearable
-                maxlength="255"
-                hint="Proporciona una breve descripción del rol. (Máx. 255 caracteres)"
-                :error-messages="validationErrors.descripcion"
-                :rules="[rules.descriptionMaxLength]"
-              />
-            </v-col>
-            <v-col cols="12" v-if="isEditing">
-              <v-select
-                label="Estado del Rol"
-                v-model="estado"
-                :items="['activo', 'inactivo']"
-                outlined
-                required
-                :error-messages="validationErrors.estado"
-                :rules="[rules.estadoRequired]"
-              ></v-select>
-            </v-col>
-          </v-row>
-
-          <div class="d-flex justify-start">
-            <v-btn v-if="isEditing" color="secondary" @click="resetForm" class="mr-2">Cancelar Edición</v-btn>
-            <v-btn v-if="!isEditing" color="grey" text @click="resetForm" class="mr-2">Limpiar Formulario</v-btn>
-            <v-btn color="primary" type="submit">{{ isEditing ? 'Actualizar Rol' : 'Crear Rol' }}</v-btn>
-          </div>
-        </v-form>
-      </v-card-text>
-    </v-card>
-
-    <v-card outlined>
-      <v-card-title class="text-h6">Listado de Roles</v-card-title>
-      <v-row align="center" class="px-4 pb-4">
-        <v-col cols="12" sm="6" md="4" lg="3">
-          <v-text-field v-model="search" label="Buscar rol" prepend-inner-icon="mdi-magnify" outlined dense hide-details />
-        </v-col>
-        <v-col cols="12" sm="6" md="4" lg="3">
-          <v-select
-            v-model="filtroEstadoTabla"
-            :items="[{ title: 'Activos', value: 'activo' }, { title: 'Inactivos', value: 'inactivo' }, { title: 'Todos', value: 'todos' }]"
-            label="Filtrar por Estado"
-            outlined
-            dense
-            hide-details
-          ></v-select>
-        </v-col>
-        <v-col cols="12" sm="6" md="4" lg="6" class="d-flex justify-end">
-          <v-btn small @click="sortByIdAsc" class="mr-2" color="#1976D2" dark>
-            <v-icon left>mdi-sort-ascending</v-icon> Más Antiguos
-          </v-btn>
-          <v-btn small @click="sortByIdDesc" color="#1976D2" dark>
-            <v-icon left>mdi-sort-descending</v-icon> Más Recientes
-          </v-btn>
-        </v-col>
-      </v-row>
-
-      <v-data-table
-        :headers="headers"
-        :items="filteredRoles" item-value="id"
-        v-model:sort-by="sortBy"
-        class="elevation-1"
-      >
-        <template v-slot:item.estado="{ item }">
-          <v-chip :color="item.estado === 'activo' ? 'green' : 'red'" variant="flat" size="small">
-            {{ item.estado === 'activo' ? 'Activo' : 'Inactivo' }}
-          </v-chip>
-        </template>
-
-        <template v-slot:item.actions="{ item }">
-          <v-btn icon @click="editRol(item)" class="mr-1" :disabled="item.estado === 'inactivo'">
-            <v-icon color="primary">mdi-pencil</v-icon>
-          </v-btn>
-          <v-btn icon @click="handleDeleteRol(item.id)" v-if="item.estado === 'activo'">
-            <v-icon color="red">mdi-delete</v-icon>
-          </v-btn>
-          <v-btn icon @click="handleActivateRol(item.id)" v-else>
-            <v-icon color="success">mdi-check-circle</v-icon>
-          </v-btn>
-          <v-btn icon @click="handleDeletePermanentlyRol(item.id)" class="ml-1">
-            <v-icon color="grey darken-2">mdi-eraser</v-icon> </v-btn>
-        </template>
-        <template v-slot:no-data>
-          <v-alert :value="true" color="info" icon="mdi-information">
-            No hay roles disponibles.
-          </v-alert>
-        </template>
-      </v-data-table>
-    </v-card>
-
-    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-      {{ snackbar.message }}
-      <template #actions>
-        <v-btn text @click="snackbar.show = false">Cerrar</v-btn>
-      </template>
-    </v-snackbar>
-
-    <ConfirmDialog
-      v-model="showConfirmDialog"
-      :title="confirmDialogTitle"
-      :message="confirmDialogMessage"
-      :confirm-text="confirmDialogConfirmText"
-      :confirm-color="confirmDialogConfirmColor"
-      @confirm="handleConfirmAction"
-      @cancel="handleCancelAction"
-    />
-  </v-container>
-</template>
-
 <style scoped>
 .form {
   padding: 1rem;
@@ -457,5 +480,23 @@ const sortByIdDesc = () => {
   color: red;
   font-size: 0.85em;
   margin-top: 5px;
+}
+
+.text-h5, .text-h6 {
+  color: #1976D2;
+  font-weight: bold;
+}
+/* Estilos para que los botones de toggle se vean bien sin texto */
+.v-btn-toggle .v-btn {
+  min-width: 44px; /* Asegura un tamaño mínimo para que el ícono se vea bien */
+}
+/* Estilo para controlar la altura de las filas de la tabla */
+.v-data-table tbody tr {
+  height: 48px; /* O el valor que consideres apropiado */
+  min-height: 48px;
+}
+/* Asegurarse de que las celdas también tengan un padding consistente */
+.v-data-table tbody td {
+  padding: 8px 16px;
 }
 </style>

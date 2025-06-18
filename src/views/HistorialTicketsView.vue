@@ -6,9 +6,8 @@
         Historial de Tickets
       </v-card-title>
 
-      <!-- Nuevo: Barra de búsqueda y controles de ordenamiento -->
       <v-row class="px-4 pb-4">
-        <v-col cols="12" sm="6" md="4">
+        <v-col cols="12">
           <v-text-field
             v-model="search"
             label="Buscar tickets..."
@@ -20,21 +19,8 @@
             hide-details
           />
         </v-col>
-        <v-col cols="12" sm="6" md="8" class="d-flex justify-end">
-          <v-btn-toggle v-model="sortOrder" mandatory>
-            <v-btn value="asc" @click="changeSortOrder('asc')">
-              <v-icon left>mdi-sort-ascending</v-icon>
-              Más Antiguos
-            </v-btn>
-            <v-btn value="desc" @click="changeSortOrder('desc')">
-              <v-icon left>mdi-sort-descending</v-icon>
-              Más Recientes
-            </v-btn>
-          </v-btn-toggle>
-        </v-col>
       </v-row>
 
-      <!-- Tabla existente (sin cambios) -->
       <v-data-table-server
         v-model:items-per-page="itemsPerPage"
         v-model:page="page"
@@ -46,14 +32,16 @@
         @update:options="loadItems"
         class="elevation-1"
       >
-        <!-- Prioridad -->
+        <template #item.rowNumber="{ index }">
+          {{ (page - 1) * itemsPerPage + index + 1 }}
+        </template>
+
         <template #item.prioridad.nombre="{ item }">
           <v-chip :color="getPrioridadColor(item.prioridad?.nombre)" small>
             {{ item.prioridad?.nombre || 'N/A' }}
           </v-chip>
         </template>
 
-        <!-- Estado -->
         <template #item.estado.nombre="{ item }">
           <v-chip :color="getEstadoColor(item.estado?.nombre)" small>
             {{ item.estado?.nombre || 'N/A' }}
@@ -64,7 +52,6 @@
           {{ formatDate(item.createdAt || '') }}
         </template>
 
-        <!-- Acciones -->
         <template #item.actions="{ item }">
           <v-btn
             icon
@@ -83,131 +70,148 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { debounce } from 'lodash'
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { debounce } from 'lodash'; // Asegúrate de tener @types/lodash instalado
 
-const router = useRouter()
+const router = useRouter();
 
 // Define el tipo de Ticket para evitar errores de tipo
 interface Ticket {
-  id: number
-  titulo: string
-  prioridad?: { nombre?: string }
-  estado?: { nombre?: string }
-  created_at?: string
-  createdAt?: string
-  // agrega otros campos según sea necesario
+  id: number; // El ID sigue siendo necesario internamente para acciones como 'irADetalle'
+  titulo: string;
+  prioridad?: { nombre?: string | null };
+  estado?: { nombre?: string | null };
+  created_at?: string;
+  createdAt?: string;
 }
 
-// Estado existente
-const tickets = ref<Ticket[]>([])
-const loading = ref(false)
-const totalItems = ref(0)
-const page = ref(1)
-const itemsPerPage = ref(10)
+// Estado de la tabla
+const tickets = ref<Ticket[]>([]);
+const loading = ref(false);
+const totalItems = ref(0);
+const page = ref(1);
+const itemsPerPage = ref(10);
 
-// Nuevo estado para búsqueda y ordenamiento
-const search = ref('')
-const sortOrder = ref('desc') // 'asc' o 'desc'
+// Estado para búsqueda
+const search = ref('');
+const sortOrder = ref('desc'); // Se mantiene fijo en 'desc' para mostrar los más recientes
 
-// Cabeceras (sin cambios)
+// Cabeceras de la tabla (¡Aquí hemos quitado 'ID'!)
 const headers = [
-  { title: 'ID', key: 'id', sortable: true },
+  { title: '#', key: 'rowNumber', sortable: false }, // Columna para el número de fila secuencial
   { title: 'Título', key: 'titulo', sortable: true },
   { title: 'Prioridad', key: 'prioridad.nombre', sortable: true },
   { title: 'Estado', key: 'estado.nombre', sortable: true },
   { title: 'Fecha', key: 'createdAt', sortable: true },
   { title: 'Acciones', key: 'actions', sortable: false }
-]
+];
 
-// Función modificada para incluir búsqueda y ordenamiento
-async function loadItems() {
+// Función para cargar los tickets de la API
+async function loadItems(options: { page: number; itemsPerPage: number; sortBy: { key: string; order: string }[] } = { page: page.value, itemsPerPage: itemsPerPage.value, sortBy: [] }) {
   try {
-    loading.value = true
+    loading.value = true;
+
+    page.value = options.page;
+    itemsPerPage.value = options.itemsPerPage;
+
     const params = new URLSearchParams({
       page: page.value.toString(),
       limit: itemsPerPage.value.toString(),
       sortOrder: sortOrder.value,
-      search: search.value.trim() // Envía el término de búsqueda
-    })
+      search: search.value.trim()
+    });
 
-    console.log('Parámetros enviados:', params.toString()) // Debug
+    console.log('Parámetros de la API:', params.toString());
 
-    const response = await fetch(`http://localhost:3333/api/tickets/historial?${params}`)
-    if (!response.ok) throw new Error('Error en la respuesta')
+    const response = await fetch(`http://localhost:3333/api/tickets/historial?${params}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error en la respuesta de la API:', response.status, errorText);
+      throw new Error(`Error en la respuesta del servidor: ${response.status} ${errorText}`);
+    }
 
-    const { data, meta } = await response.json()
-    console.log('Datos recibidos:', data[0])
-    tickets.value = data
-    totalItems.value = meta.total
+    const { data, meta } = await response.json();
+
+    tickets.value = Array.isArray(data) ? data.map(ticket => ({
+      ...ticket,
+      prioridad: ticket.prioridad || { nombre: null },
+      estado: ticket.estado || { nombre: null }
+    })) : [];
+    
+    totalItems.value = meta?.total !== undefined ? meta.total : 0;
+
+    console.log('Tickets cargados:', tickets.value.length, 'Total items:', totalItems.value);
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error al cargar tickets:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
-// Nuevas funciones para manejar búsqueda y ordenamiento
+
+// Manejador de búsqueda con debounce
 const handleSearch = debounce(() => {
-  page.value = 1
-  loadItems()
-}, 500)
+  page.value = 1;
+  loadItems();
+}, 500);
 
-function changeSortOrder(order: string) {
-  sortOrder.value = order
-  page.value = 1 // Resetear a la primera página al cambiar orden
-  loadItems()
-}
+// Al montar el componente, cargar los tickets con el orden predeterminado (más recientes)
+onMounted(() => {
+  loadItems({ page: 1, itemsPerPage: itemsPerPage.value, sortBy: [] });
+});
 
-// Resto del código existente (sin cambios)
+// Navegación al detalle del ticket (¡el ID sigue siendo necesario aquí!)
 function irADetalle(ticketId: number) {
-  router.push({ name: 'detalle-ticket', params: { id: ticketId } })
+  router.push({ name: 'detalle-ticket', params: { id: ticketId } });
 }
 
-function getEstadoColor(estado: string) {
-  if (!estado) return 'grey'
+// Funciones de color (sin cambios)
+function getEstadoColor(estado: string | null | undefined) {
+  if (!estado) return 'blue-grey';
+
   switch (estado.toLowerCase()) {
-    case 'abierto': return 'blue'
-    case 'asignado': return 'orange'
-    case 'cerrado': return 'green'
-    default: return 'grey'
+    case 'abierto': return 'blue';
+    case 'asignado': return 'indigo';
+    case 'en progreso': return 'cyan';
+    case 'pendiente': return 'orange';
+    case 'revisión': return 'purple';
+    case 'cerrado': return 'green';
+    case 'reabierto': return 'red-lighten-2';
+    default: return 'blue-grey';
   }
 }
 
-function getPrioridadColor(prioridad: string) {
-  if (!prioridad) return 'grey'
+function getPrioridadColor(prioridad: string | null | undefined) {
+  if (!prioridad) return 'blue-grey-darken-1';
+
   switch (prioridad.toLowerCase()) {
-    case 'alta': return 'red'
-    case 'media': return 'orange'
-    case 'baja': return 'green'
-    default: return 'grey'
+    case 'critica': return 'red-darken-3';
+    case 'urgente': return 'red';
+    case 'alta': return 'deep-orange';
+    case 'media': return 'amber';
+    case 'baja': return 'light-green-darken-1';
+    default: return 'blue-grey-darken-1';
   }
 }
 
 // Función para formatear la fecha
 function formatDate(dateString: string) {
-  console.log('Fecha recibida:', dateString)
-  if (!dateString) return 'N/A'
-  const date = new Date(dateString)
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    console.warn('Fecha inválida recibida:', dateString);
+    return 'Fecha inválida';
+  }
   return date.toLocaleDateString('es-ES', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit'
-  })
+  });
 }
 </script>
 
 <style scoped>
-/* Estilos para los nuevos elementos */
-.v-btn-toggle {
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.v-btn-toggle .v-btn {
-  margin: 0;
-  border-radius: 0;
-}
+/* Estilos adicionales si los tienes */
 </style>

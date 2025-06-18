@@ -2,7 +2,7 @@
   <v-container class="py-5">
     <v-card class="dashboard-card" outlined>
       <v-card-title class="text-h4 text-center py-6 dashboard-title">
-        Bienvenido, {{ authStore.user?.nombre || 'Usuario' }}!
+        Bienvenid@, {{ authStore.user?.nombre || 'Usuario' }}!
       </v-card-title>
       <v-card-text>
         <p class="text-lg text-center mb-10 dashboard-subtitle">
@@ -16,12 +16,12 @@
               <v-card-text class="text-center text-5xl font-bold metric-value">
                 {{ metrics.ticketsAbiertos }}
               </v-card-text>
-              <v-card-subtitle class="text-center metric-subtitle">Tickets pendientes de resolución</v-card-subtitle>
+              <v-card-subtitle class="text-center metric-subtitle">Tickets pendientes</v-card-subtitle>
             </v-card>
           </v-col>
           <v-col cols="12" md="4">
             <v-card class="metric-card" elevation="2">
-              <v-card-title class="text-h6 metric-title">Tickets Cerrados (Mes)</v-card-title>
+              <v-card-title class="text-h6 metric-title">Tickets Cerrados</v-card-title>
               <v-card-text class="text-center text-5xl font-bold metric-value">
                 {{ metrics.ticketsCerradosMes }}
               </v-card-text>
@@ -141,116 +141,167 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+/* Colores Base Definidos */
+:root {
+  --color-primary-blue: #0A72ED; /* Un azul primario más vibrante y distintivo */
+  --color-dark-blue: #004D99; /* Azul oscuro para títulos y elementos importantes */
+  --color-light-blue: #EBF5FB; /* Azul muy pálido para fondos sutiles */
+  --color-grey-dark: #333333; /* Gris oscuro para el texto principal */
+  --color-white: #FFFFFF; /* Blanco puro para fondos de tarjeta */
+  --color-metric-bg: #F0F8FF; /* Un azul casi blanco para las tarjetas de métricas */
+  --color-section-bg: #F8F8F8; /* Un gris muy claro para las tarjetas de sección */
+}
 
 /* Estilos para el contenedor principal de la tarjeta del dashboard */
 .dashboard-card {
   max-width: 1200px;
   margin: 20px auto;
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  background-color: var(--color-white);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border: 1px solid #E0E0E0; /* Borde sutil para la tarjeta principal */
 }
 
 .dashboard-title {
-  color: #333333;
+  color: rgb(57, 57, 173);
   font-family: 'Inter', sans-serif;
-  font-weight: 700;
+  font-weight: 900; /* Aún más audaz */
+  font-size: 2.8rem !important; /* Más grande para el título de bienvenida */
+  background-color: var(--color-light-blue); /* Fondo azul pálido para el título */
+  padding: 30px 0 !important; /* Más padding para espacio */
+  border-bottom: 2px solid var(--color-primary-blue); /* Línea de resalte más fuerte */
+  letter-spacing: -0.5px; /* Ligeramente más junto para una mejor lectura */
 }
 
 .dashboard-subtitle {
-  color: #555555;
+  color:black;
   font-family: 'Inter', sans-serif;
+  font-size: 1.3rem !important; /* Más grande y más fácil de leer */
+  margin-top: 20px; /* Más espacio superior */
+  line-height: 1.6;
+  padding: 0 20px; /* Padding horizontal para evitar que el texto toque los bordes */
 }
 
 /* Estilos para las tarjetas de métricas */
 .metric-card {
-  background-color: #E3F2FD;
-  border-radius: 8px;
-  padding: 20px;
+  background-color: var(--color-metric-bg); /* Fondo azul muy claro para métricas */
+  border-radius: 12px;
+  padding: 30px; /* Más padding para mayor aire */
   text-align: center;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #CDE0F5; /* Borde más visible */
 }
 
 .metric-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-10px); /* Efecto de elevación más pronunciado */
+  box-shadow: 0 15px 30px rgba(70, 3, 255, 0.18); /* Sombra más intensa al pasar el ratón */
 }
 
 .metric-title {
-  color: #1976D2;
+  color: var(--color-dark-blue);
   font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  margin-bottom: 10px;
+  font-weight: 700;
+  font-size: 1.45rem !important; /* Título de métrica un poco más grande */
+  margin-bottom: 15px;
 }
 
 .metric-value {
-  color: #1565C0;
+  color:rgb(54, 54, 223); /* Valor en azul primario llamativo */
   font-family: 'Inter', sans-serif;
-  font-weight: 800;
+  font-weight: 900;
+  font-size: 5rem !important; /* ¡Aún más grande para destacar! */
+  line-height: 1;
+  margin-bottom: 15px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.1); /* Sombra más definida para el número */
 }
 
 .metric-subtitle {
-  color: #42A5F5;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.9rem;
+  color: rgb(0, 0, 0); /* El color que ya tenías */
+  font-family: 'Montserrat', sans-serif; /* Usamos Montserrat para que sea consistente con los títulos */
+  font-size: 1.02rem !important; /* Ligeramente más grande para mayor impacto */
+  line-height: 1.4;
+  font-weight: 900; /* ¡Esto hace que la letra sea fuerte! */
+  letter-spacing: 0.5px; /* Un pequeño espaciado para mejor legibilidad en negrita */
 }
 
 /* Estilos para las tarjetas de sección (Actividad Reciente) */
 .section-card {
-  background-color: #F5F5F5;
-  border-radius: 8px;
-  padding: 20px;
+  background-color: var(--color-section-bg); /* Fondo gris muy claro para secciones */
+  border-radius: 50px;
+  padding: 30px; /* Más padding */
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #6d62ca; /* Borde sutil */
 }
 
 .section-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-10px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.18);
 }
 
 .section-title-blue {
-  color: #1976D2;
+  color: rgb(22, 76, 224);
   font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  margin-bottom: 15px;
+  font-weight: 700;
+  font-size: 1.8rem !important; /* Título de sección más grande */
+  margin-bottom: 25px;
+  padding-bottom: 12px;
+  border-bottom: 3px solid var(--color-primary-blue); /* Línea de resalte más gruesa */
 }
 
 /* Estilos para los elementos de lista dentro de las secciones */
 .v-list-item-title {
   font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  color: #333333;
+  font-weight: 600;
+  color: rgb(10, 1, 1); /* Texto principal de la lista en gris oscuro */
+  font-size: 1.15rem !important; /* Un poco más grande y claro */
+  margin-bottom: 4px;
 }
 
 .v-list-item-subtitle {
   font-family: 'Inter', sans-serif;
-  color: #777777;
-  font-size: 0.85rem;
+  color: var(--color-grey-medium); /* Subtítulo de la lista en gris medio para buena legibilidad */
+  font-size: 0.95rem !important; /* Ligeramente más grande y más fácil de leer */
 }
 
-/* El estilo para el botón de explorar ya no es necesario */
-/* .explore-button {
+/* Espaciado y borde de lista */
+.v-list-item {
+  margin-bottom: 12px; /* Más espacio entre ítems */
+  padding-bottom: 12px;
+  border-bottom: 1px solid #EFEFEF; /* Línea separadora sólida y más clara */
+}
+.v-list-item:last-child {
+  border-bottom: none;
+}
+
+/* Estilos para el texto "No hay actividad reciente" */
+.text-grey {
+  color: var(--color-grey-light) !important; /* Texto en gris claro para este mensaje */
+  font-style: italic;
+  padding: 25px;
+  font-size: 1.1rem !important; /* Más grande y legible */
+}
+
+/* Overlay y Alert */
+.v-overlay {
+  background-color: rgba(255, 255, 255, 0.85); /* Fondo de overlay más blanco y opaco */
+}
+
+.v-alert {
   font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  text-transform: none;
-  border-radius: 25px;
-  padding: 15px 30px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  font-size: 1.1rem;
+  font-weight: 500;
+  border-radius: 8px;
 }
 
-.explore-button:hover {
-  transform: translateY(-2px);
-  background-color: #1565C0 !important;
-} */
-
-/* Clases de utilidad de Vuetify y Tailwind (asegúrate de que Tailwind esté configurado) */
+/* Utilidades de Vuetify y Tailwind (ajustadas para reflejar nuevos tamaños) */
 .py-5 { padding-top: 1.25rem; padding-bottom: 1.25rem; }
 .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
 .mb-8 { margin-bottom: 2rem; }
 .mb-10 { margin-bottom: 2.5rem; }
-.mt-10 { margin-top: 2.5rem; }
+.mt-4 { margin-top: 1rem; }
 .text-h4 { font-size: 2.125rem; line-height: 2.5rem; }
 .text-h5 { font-size: 1.5rem; line-height: 2rem; }
 .text-h6 { font-size: 1.25rem; line-height: 1.75rem; }
@@ -258,4 +309,7 @@ onMounted(async () => {
 .text-center { text-align: center; }
 .font-bold { font-weight: 700; }
 .font-extrabold { font-weight: 800; }
+.text-5xl { font-size: 3rem; line-height: 1; }
+.text-6xl { font-size: 4rem; line-height: 1; }
+.text-7xl { font-size: 5rem; line-height: 1; }
 </style>

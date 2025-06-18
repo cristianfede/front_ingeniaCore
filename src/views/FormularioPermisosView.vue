@@ -79,48 +79,55 @@
       <v-card-title class="text-h6">Asignaciones Existentes</v-card-title>
 
       <v-row align="center" class="px-4 pb-4">
-                <v-col cols="12" sm="6" md="5" lg="4">
-                    <v-text-field v-model="search" label="Buscar permiso" prepend-inner-icon="mdi-magnify" outlined dense hide-details />
-                </v-col>
+        <v-col cols="12" sm="6" md="5" lg="4">
+          <v-text-field v-model="search" label="Buscar permiso" prepend-inner-icon="mdi-magnify" outlined dense hide-details />
+        </v-col>
 
-                <v-col cols="12" sm="6" md="7" lg="8" class="d-flex justify-start">
-                    <v-btn small @click="sortByIdAsc" class="mr-2" color="#1976D2" dark>
-                        <v-icon left>mdi-sort-ascending</v-icon>
-                    </v-btn>
-                    <v-btn small @click="sortByIdDesc" color="#1976D2" dark>
-                        <v-icon left>mdi-sort-descending</v-icon>
-                    </v-btn>
-                </v-col>
-            </v-row>
+        <v-col cols="12" sm="6" md="7" lg="8" class="d-flex justify-start">
+          <!-- Botones de ordenamiento ahora son solo flechas con estilo primario -->
+          <v-btn-toggle v-model="sortBy[0].order" mandatory variant="elevated" color="primary">
+            <v-btn value="asc" class="pa-2">
+              <v-icon>mdi-sort-ascending</v-icon>
+            </v-btn>
+            <v-btn value="desc" class="pa-2">
+              <v-icon>mdi-sort-descending</v-icon>
+            </v-btn>
+          </v-btn-toggle>
+        </v-col>
+      </v-row>
       <v-data-table
-  :headers="headersAsignaciones"
-  :items="filteredAsignaciones"
-  item-value="id"
-  v-model:sort-by="sortBy"
-  :loading="cargandoAsignaciones"
-  loading-text="Cargando..."
-  no-data-text="No hay asignaciones"
-  class="elevation-1"
->
-  <template v-slot:[`item.permisosAgrupados`]="{ item }">
-    <div v-if="item.permisosAgrupados && item.permisosAgrupados.length > 0">
-      {{ item.permisosAgrupados.map(permiso => permiso.nombre).join(', ') }}
-    </div>
-    <div v-else>
-      N/A
-    </div>
-  </template>
+        :headers="headersAsignaciones"
+        :items="filteredAsignaciones"
+        item-value="id"
+        v-model:sort-by="sortBy"
+        :loading="cargandoAsignaciones"
+        loading-text="Cargando..."
+        no-data-text="No hay asignaciones"
+        class="elevation-1"
+      >
+        <template v-slot:item.id="{ item }">
+          <!-- Muestra solo el ID del rol en la columna 'ID' -->
+          {{ item.rol.id }}
+        </template>
+        <template v-slot:[`item.permisosAgrupados`]="{ item }">
+          <div v-if="item.permisosAgrupados && item.permisosAgrupados.length > 0">
+            {{ item.permisosAgrupados.map(permiso => permiso.nombre).join(', ') }}
+          </div>
+          <div v-else>
+            N/A
+          </div>
+        </template>
 
-  <template v-slot:item.actions="{ item }">
-    <v-btn icon class="mr-2" @click="editAssignment(item)">
-      <v-icon :color="selectedAssignmentId === item.id ? 'primary' : 'blue'">mdi-pencil</v-icon>
-    </v-btn>
-    <v-btn icon @click="eliminarAsignacion(item)">
-      <v-icon color="red">mdi-delete</v-icon>
-    </v-btn>
-  </template>
-</v-data-table>
- </v-card>
+        <template v-slot:item.actions="{ item }">
+          <v-btn icon class="mr-2" @click="editAssignment(item)">
+            <v-icon :color="selectedAssignmentId === item.id ? 'primary' : 'blue'">mdi-pencil</v-icon>
+          </v-btn>
+          <v-btn icon @click="eliminarAsignacion(item)">
+            <v-icon color="red">mdi-delete</v-icon>
+          </v-btn>
+        </template>
+      </v-data-table>
+    </v-card>
 
     <v-snackbar
       v-model="snackbar.show"
@@ -163,6 +170,7 @@
           <v-spacer></v-spacer>
           <v-btn color="grey-darken-1" text @click="showConfirmDialog = false">Cancelar</v-btn>
           <v-btn color="primary" text @click="executeConfirmedAction">Confirmar</v-btn>
+          <v-spacer></v-spacer>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -197,10 +205,19 @@ const itemToConfirm = ref<any>(null);
 const dialogAction = ref<'update' | 'delete' | 'assign' | ''>('');
 const formularioAsignacion = ref<any>(null);
 
+// Tipo para sortBy, consistente con Vuetify v-data-table
+type MySortItem = {
+  key: string;
+  order: boolean | 'asc' | 'desc' | undefined;
+};
+
+// Ordenación por defecto para la tabla (se controla por los botones del template)
+const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }]);
+
+
 const filteredAsignaciones = computed(() => {
   const searchTerm = search.value.trim().toLowerCase();
-
-  return groupedAssignments.value.filter((item) => {
+  let filtered = groupedAssignments.value.filter((item) => {
     return (
       item.rolNombre.toLowerCase().includes(searchTerm) ||
       item.itemNombre.toLowerCase().includes(searchTerm) ||
@@ -209,6 +226,48 @@ const filteredAsignaciones = computed(() => {
       )
     );
   });
+
+  // Aplicar el ordenamiento
+  if (sortBy.value && sortBy.value.length > 0) {
+    const sortKey = sortBy.value[0].key;
+    const sortOrder = sortBy.value[0].order;
+
+    filtered.sort((a, b) => {
+      let valA: any;
+      let valB: any;
+
+      if (sortKey === 'rolNombre') {
+        valA = a.rolNombre;
+        valB = b.rolNombre;
+      } else if (sortKey === 'itemNombre') {
+        valA = a.itemNombre;
+        valB = b.itemNombre;
+      } else if (sortKey === 'id') {
+        // Para ordenar por la parte numérica del ID compuesto (rolId-itemId)
+        valA = parseInt(a.id.split('-')[0]);
+        valB = parseInt(b.id.split('-')[0]);
+        if (valA === valB) {
+            valA = parseInt(a.id.split('-')[1]);
+            valB = parseInt(b.id.split('-')[1]);
+        }
+      } else {
+        // Fallback para otras claves si fuera necesario
+        valA = (a as any)[sortKey];
+        valB = (b as any)[sortKey];
+      }
+
+      if (valA === null || valA === undefined) valA = '';
+      if (valB === null || valB === undefined) valB = '';
+
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      } else {
+        return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
+      }
+    });
+  }
+
+  return filtered;
 });
 
 
@@ -229,11 +288,11 @@ const snackbar = ref({
   timeout: 3000,
 });
 
-const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }]);
 
 const headersAsignaciones = [
-  { title: 'Rol', key: 'rolNombre' },
-  { title: 'Ítem', key: 'itemNombre' },
+  { title: 'ID', key: 'id', sortable: false }, // Agregado y con sortable: false
+  { title: 'Rol', key: 'rolNombre', sortable: false }, // CAMBIO: sortable: false
+  { title: 'Ítem', key: 'itemNombre', sortable: false }, // CAMBIO: sortable: false
   { title: 'Permiso', key: 'permisosAgrupados', sortable: false},
   { title: 'Acciones', key: 'actions', sortable: false }
 ];
@@ -465,5 +524,25 @@ watch(itemSeleccionado, (newVal, oldVal) => {
 .selected-row {
   background-color: rgba(var(--v-theme-primary), 0.1);
   transition: background-color 0.3s ease;
+}
+
+/* Estilos para que los botones de toggle se vean bien sin texto */
+.v-btn-toggle .v-btn {
+  min-width: 44px; /* Asegura un tamaño mínimo para que el ícono se vea bien */
+}
+/* Estilo para controlar la altura de las filas de la tabla */
+.v-data-table tbody tr {
+  height: 48px; /* O el valor que consideres apropiado */
+  min-height: 48px;
+}
+/* Asegurarse de que las celdas también tengan un padding consistente */
+.v-data-table tbody td {
+  padding: 8px 16px;
+}
+
+/* Estilos para los títulos de las tarjetas */
+.text-h5, .text-h6 {
+  color: #1976D2;
+  font-weight: bold;
 }
 </style>
