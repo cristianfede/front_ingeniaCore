@@ -17,6 +17,15 @@
             <v-col cols="12" md="6">
               <v-text-field label="telefono" v-model="telefono" type="telefono" required outlined />
             </v-col>
+            <v-col cols="12" v-if="isEditing">
+              <v-select
+                label="Estado de la Empresa"
+                v-model="estado"
+                :items="['activo', 'inactivo']"
+                outlined
+                required
+              ></v-select>
+            </v-col>
           </v-row>
           <div class="d-flex justify-start">
             <v-btn v-if="isEditing" color="secondary" @click="resetForm" class="mr-2">Cancelar</v-btn>
@@ -30,10 +39,20 @@
     <v-card outlined>
       <v-card-title class="text-h6">Lista de Empresas</v-card-title>
       <v-row align="center" class="px-4 pb-4">
-        <v-col cols="12" sm="6" md="5" lg="4">
+        <v-col cols="12" sm="6" md="4" lg="3">
           <v-text-field v-model="search" label="Buscar empresa" prepend-inner-icon="mdi-magnify" outlined dense hide-details />
         </v-col>
-        <v-col cols="12" sm="6" md="7" lg="8" class="d-flex justify-start">
+        <v-col cols="12" sm="6" md="4" lg="3">
+          <v-select
+            v-model="filtroEstadoTabla"
+            :items="[{ title: 'Activas', value: 'activo' }, { title: 'Inactivas', value: 'inactivo' }, { title: 'Todas', value: 'todos' }]"
+            label="Filtrar por Estado"
+            outlined
+            dense
+            hide-details
+          ></v-select>
+        </v-col>
+        <v-col cols="12" sm="6" md="4" lg="6" class="d-flex justify-end">
           <v-btn small @click="sortByIdAsc" class="mr-2" color="#1976D2" dark>
             <v-icon left>mdi-sort-ascending</v-icon> Más Antiguas
           </v-btn>
@@ -48,16 +67,32 @@
         :items="filteredEmpresas"
         item-value="id"
         v-model:sort-by="sortBy"
-        v-model:sort-desc="sortDesc"
         class="elevation-1"
       >
+        <template v-slot:item.estado="{ item }">
+          <v-chip :color="item.estado === 'activo' ? 'green' : 'red'" variant="flat" size="small">
+            {{ item.estado === 'activo' ? 'Activa' : 'Inactiva' }}
+          </v-chip>
+        </template>
+
         <template v-slot:item.actions="{ item }">
-          <v-btn icon @click="editEmpresa(item)" class="mr-1">
+          <v-btn icon @click="editEmpresa(item)" class="mr-1" :disabled="item.estado === 'inactivo'">
             <v-icon color="primary">mdi-pencil</v-icon>
           </v-btn>
-          <v-btn icon @click="handleDeleteEmpresa(item.id)">
+          <v-btn icon @click="handleInactivateEmpresa(item.id)" v-if="item.estado === 'activo'">
             <v-icon color="red">mdi-delete</v-icon>
           </v-btn>
+          <v-btn icon @click="handleActivateEmpresa(item.id)" v-else>
+            <v-icon color="success">mdi-check-circle</v-icon>
+          </v-btn>
+          <v-btn icon @click="handleDeletePermanentlyEmpresa(item.id)" class="ml-1">
+            <v-icon color="grey darken-2">mdi-eraser</v-icon>
+          </v-btn>
+        </template>
+        <template v-slot:no-data>
+          <v-alert :value="true" color="info" icon="mdi-information">
+            No hay empresas disponibles.
+          </v-alert>
         </template>
       </v-data-table>
     </v-card>
@@ -82,15 +117,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
-import { crearEmpresa, obtenerEmpresas, actualizarEmpresa, eliminarEmpresa } from '../services/empresasService'; // ¡CORREGIDO: Cambiado a empresasService!
-import ConfirmDialog from '../components/Confirmardialogo.vue'; // Asegúrate de que la ruta sea correcta
-import { transformItem } from 'vuetify/lib/composables/list-items.mjs';
+import { ref, onMounted, computed, watch } from 'vue';
+// *** IMPORTACIONES ACTUALIZADAS DEL SERVICIO ***
+import { crearEmpresa, obtenerEmpresas, actualizarEmpresa, inactivarEmpresa, activarEmpresa, eliminarEmpresaPermanentemente } from '../services/empresasService';
+import ConfirmDialog from '../components/Confirmardialogo.vue';
 
 const nombre = ref('');
 const nit = ref('');
 const correo = ref('');
 const telefono = ref('');
+const estado = ref<'activo' | 'inactivo'>('activo'); // Valor por defecto para el estado y tipo específico
 
 const snackbar = ref({
   show: false,
@@ -100,25 +136,28 @@ const snackbar = ref({
 const isEditing = ref(false);
 const editingEmpresaId = ref<number | null>(null);
 
-// --- Variables de estado para los modales de confirmación ---
+// --- Variables de estado para los modales de confirmación (actualizadas para nuevas acciones) ---
 const showConfirmDialog = ref(false);
 const confirmDialogTitle = ref('');
 const confirmDialogMessage = ref('');
 const confirmDialogConfirmText = ref('');
 const confirmDialogConfirmColor = ref('');
-const currentAction = ref(''); // 'create', 'update', 'delete'
-const empresaToDeleteId = ref<number | null>(null);
+// Define los tipos de acciones posibles
+type ActionType = 'create' | 'update' | 'inactivate' | 'activate' | 'delete_permanent';
+const currentAction = ref<ActionType | ''>(''); // 'create', 'update', 'inactivate', 'activate', 'delete_permanent'
+const empresaToProcessId = ref<number | null>(null); // Usamos una sola variable para el ID
 // ------------------------------------------------------------------
 
-const empresas = ref<any[]>([]); // Ahora almacena empresas
+const empresas = ref<any[]>([]);
 const search = ref('');
 type MySortItem = {
   key: string;
   order: boolean | 'asc' | 'desc' | undefined;
 };
 
-const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }]);
-const sortDesc = ref(false);
+const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'desc' }]); // Ordenar por ID descendente por defecto para "más recientes"
+
+const filtroEstadoTabla = ref('todos'); // Nuevo filtro de estado para la tabla
 
 const headers = [
   { title: 'ID', key: 'id', sortable: false },
@@ -127,8 +166,8 @@ const headers = [
   { title: 'Correo', key: 'correo', sortable: false },
   { title: 'Telefono', key: 'telefono', sortable: false },
   { title: 'Proyectos', key: 'proyectos', sortable: false },
+  { title: 'Estado', key: 'estado', sortable: false }, // Nueva columna para el estado
   { title: 'Acciones', key: 'actions', sortable: false },
-
 ];
 
 const sortByIdAsc = () => {
@@ -139,15 +178,20 @@ const sortByIdDesc = () => {
   sortBy.value = [{ key: 'id', order: 'desc' }];
 };
 
-onMounted(async () => {
-  await cargarEmpresas();
-  sortByIdAsc();
+// Observa cambios en filtroEstadoTabla y recarga empresas
+watch(filtroEstadoTabla, async (newVal) => {
+  await cargarEmpresas(newVal);
 });
 
-async function cargarEmpresas() {
+onMounted(async () => {
+  await cargarEmpresas(filtroEstadoTabla.value);
+});
+
+async function cargarEmpresas(estadoFiltro?: string) {
   try {
-    empresas.value = await obtenerEmpresas();
+    empresas.value = await obtenerEmpresas(estadoFiltro);
   } catch (err) {
+    console.error('Error al cargar empresas:', err);
     snackbar.value = {
       show: true,
       message: 'Error al cargar empresas',
@@ -169,6 +213,7 @@ function editEmpresa(empresa: any) {
   nit.value = empresa.nit;
   correo.value = empresa.correo;
   telefono.value = empresa.telefono;
+  estado.value = empresa.estado; // Carga el estado actual para edición
 
   window.scrollTo({ top: 0, behavior: 'smooth'})
 }
@@ -210,52 +255,82 @@ async function handleConfirmAction() {
       nit: nit.value,
       correo: correo.value,
       telefono: telefono.value,
+      estado: estado.value, // Incluye el estado al actualizar o crear
     };
 
     if (currentAction.value === 'create') {
-      const nuevaEmpresa = await crearEmpresa(empresaData);
-      empresas.value.push(nuevaEmpresa);
-      sortBy.value = [{ key: 'id', order: 'desc' }];
+      await crearEmpresa(empresaData);
       snackbar.value = { show: true, message: 'Empresa creada exitosamente.', color: 'success' };
     } else if (currentAction.value === 'update') {
-      const actualizado = await actualizarEmpresa(editingEmpresaId.value!, empresaData);
-      const index = empresas.value.findIndex(e => e.id === editingEmpresaId.value);
-      if (index !== -1) {
-        Object.assign(empresas.value[index], actualizado);
-      }
+      await actualizarEmpresa(editingEmpresaId.value!, empresaData);
       snackbar.value = { show: true, message: 'Empresa actualizada correctamente.', color: 'success' };
-    } else if (currentAction.value === 'delete') {
-      if (empresaToDeleteId.value !== null) {
-        await eliminarEmpresa(empresaToDeleteId.value);
-        empresas.value = empresas.value.filter(e => e.id !== empresaToDeleteId.value);
-        snackbar.value = { show: true, message: 'Empresa eliminada correctamente.', color: 'success' };
+    } else if (currentAction.value === 'inactivate') {
+      if (empresaToProcessId.value !== null) {
+        await inactivarEmpresa(empresaToProcessId.value);
+        snackbar.value = { show: true, message: 'Empresa inactivada correctamente.', color: 'success' };
+      }
+    } else if (currentAction.value === 'activate') {
+      if (empresaToProcessId.value !== null) {
+        await activarEmpresa(empresaToProcessId.value);
+        snackbar.value = { show: true, message: 'Empresa activada correctamente.', color: 'success' };
+      }
+    } else if (currentAction.value === 'delete_permanent') {
+      if (empresaToProcessId.value !== null) {
+        await eliminarEmpresaPermanentemente(empresaToProcessId.value);
+        snackbar.value = { show: true, message: 'Empresa eliminada permanentemente.', color: 'success' };
       }
     }
+
+    // Recarga las empresas después de cualquier operación exitosa para reflejar los cambios
+    await cargarEmpresas(filtroEstadoTabla.value);
     resetForm();
   } catch (err: any) {
-    const errorMessage = err?.response?.data?.message || 'Error al procesar la operación.';
+    const errorMessage = err?.message || 'Error al procesar la operación.'; // Ajustado para 'fetch'
     snackbar.value = { show: true, message: errorMessage, color: 'error' };
   } finally {
     showConfirmDialog.value = false;
     currentAction.value = '';
+    empresaToProcessId.value = null; // Limpiar el ID después de la acción
   }
 }
 
-function handleDeleteEmpresa(id: number) {
-  empresaToDeleteId.value = id;
-  confirmDialogTitle.value = 'Confirmar Eliminación de Empresa';
-  confirmDialogMessage.value = '¿Estás seguro de que quieres eliminar esta empresa? Esta acción es irreversible y afectará a los clientes asociados.';
-  confirmDialogConfirmText.value = 'Eliminar';
-  confirmDialogConfirmColor.value = 'error';
-  currentAction.value = 'delete';
+// *** Nuevas funciones para manejar inactivar, activar y eliminar permanentemente ***
+function handleInactivateEmpresa(id: number) {
+  empresaToProcessId.value = id;
+  confirmDialogTitle.value = 'Confirmar Inactivación';
+  confirmDialogMessage.value = '¿Estás seguro de que quieres inactivar esta empresa? Los usuarios y proyectos asociados no podrán interactuar con ella.';
+  confirmDialogConfirmText.value = 'Inactivar';
+  confirmDialogConfirmColor.value = 'red';
+  currentAction.value = 'inactivate';
   showConfirmDialog.value = true;
 }
 
+function handleActivateEmpresa(id: number) {
+  empresaToProcessId.value = id;
+  confirmDialogTitle.value = 'Confirmar Activación';
+  confirmDialogMessage.value = '¿Estás seguro de que quieres activar esta empresa? Volverá a estar operativa para usuarios y proyectos.';
+  confirmDialogConfirmText.value = 'Activar';
+  confirmDialogConfirmColor.value = 'success';
+  currentAction.value = 'activate';
+  showConfirmDialog.value = true;
+}
+
+function handleDeletePermanentlyEmpresa(id: number) {
+  empresaToProcessId.value = id;
+  confirmDialogTitle.value = 'Eliminar Empresa Permanentemente';
+  confirmDialogMessage.value = '¡ADVERTENCIA! ¿Estás ABSOLUTAMENTE seguro de que quieres eliminar esta empresa permanentemente? Esta acción NO se puede deshacer y eliminará todos los datos asociados. Los proyectos asociados a la empresa no se pueden eliminar por las políticas del negocio.';
+  confirmDialogConfirmText.value = 'Eliminar PERMANENTEMENTE';
+  confirmDialogConfirmColor.value = 'grey darken-2'; // O 'error' para mayor énfasis
+  currentAction.value = 'delete_permanent';
+  showConfirmDialog.value = true;
+}
+// ----------------------------------------------------------------------------------
+
 function handleCancelAction() {
   console.log('Acción de empresa cancelada por el usuario.');
-  empresaToDeleteId.value = null;
+  empresaToProcessId.value = null; // Importante limpiar si se cancela
   currentAction.value = '';
-  showConfirmDialog.value = false; // Asegura que el modal se cierre
+  showConfirmDialog.value = false;
 }
 
 function resetForm() {
@@ -263,9 +338,10 @@ function resetForm() {
   nit.value = '';
   correo.value = '';
   telefono.value = '';
+  estado.value = 'activo'; // Restablecer estado a 'activo' al limpiar formulario
   isEditing.value = false;
   editingEmpresaId.value = null;
-  empresaToDeleteId.value = null;
+  empresaToProcessId.value = null;
 }
 </script>
 

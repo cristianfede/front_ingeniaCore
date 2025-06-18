@@ -1,16 +1,30 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+// Asegúrate de que la ruta a tu servicio es correcta
 import { obtenerRoles, crearRol, actualizarRol, eliminarRolPermanentemente } from '../services/CreacionRoles'
+// Asegúrate de que la ruta a tu componente de diálogo es correcta
 import ConfirmDialog from '../components/Confirmardialogo.vue';
+
+// Para el formulario de Vuetify. Permite acceder a métodos como `validate()` y `resetValidation()`.
+const form = ref<HTMLFormElement | null>(null);
 
 const roles = ref<any[]>([])
 const nombre = ref('')
 const descripcion = ref('')
-const estado = ref('activo')
+const estado = ref('activo') // Estado por defecto para la creación
 
 const search = ref('')
 const isEditing = ref(false)
 const editingRolId = ref<number | null>(null)
+
+// Para almacenar los errores de validación del backend.
+// Aunque no se usará para mensajes de campo específicos para errores 422 de unicidad,
+// se mantiene para otros posibles errores de validación de campo individuales.
+const validationErrors = ref<Record<string, string[]>>({});
+
+// Nuevas referencias para la alerta general del formulario
+const formAlertMessage = ref('');
+const showFormAlert = ref(false);
 
 const snackbar = ref({
   show: false,
@@ -43,6 +57,15 @@ const headers = [
   { title: 'Acciones', key: 'actions', sortable: false },
 ]
 
+// REGLAS DE VALIDACIÓN FRONEND con Vuetify. Estas se ejecutan ANTES de enviar al backend.
+const rules = {
+  required: (value: string) => !!value || 'Este campo es requerido (Crear Roles Unicos).',
+  minLength: (v: string) => (v && v.length >= 3) || 'Mínimo 3 caracteres y Nombre Unico.',
+  maxLength: (v: string) => (v && v.length <= 50) || 'Máximo 50 caracteres para el nombre.',
+  descriptionMaxLength: (v: string) => (v && v.length <= 255) || 'Máximo 255 caracteres para la descripción.',
+  estadoRequired: (value: string) => !!value || 'El estado es requerido.'
+};
+
 async function cargarRoles() {
   try {
     roles.value = await obtenerRoles();
@@ -53,11 +76,23 @@ async function cargarRoles() {
 }
 
 async function submitForm() {
-  if (!nombre.value) {
-    snackbar.value = { show: true, message: 'Por favor, ingresa el nombre del rol.', color: 'warning' };
-    return;
+  // Limpiar errores de validación previos (tanto de frontend como de backend) y ocultar snackbar anterior
+  validationErrors.value = {};
+  snackbar.value.show = false;
+  formAlertMessage.value = ''; // Limpiar la alerta general del formulario
+  showFormAlert.value = false;
+
+  // VALIDACIÓN FRONEND CON VUETIFY: Ejecuta las reglas de los campos definidas en `rules`.
+  // Si esta validación falla, no se procede a la confirmación ni al envío al backend.
+  if (!form.value) return; // Asegurarse de que el formulario está montado
+  const { valid } = await form.value.validate(); // Valida todos los campos con reglas
+
+  if (!valid) {
+    snackbar.value = { show: true, message: 'Por favor, corrige los errores del formulario.', color: 'warning' };
+    return; // Detiene la ejecución si la validación frontend falla
   }
 
+  // Si la validación frontend pasa, procede a la confirmación del usuario para enviar al backend
   if (isEditing.value) {
     confirmDialogTitle.value = 'Confirmar Actualización de Rol';
     confirmDialogMessage.value = '¿Estás seguro de que quieres actualizar este rol?';
@@ -76,28 +111,35 @@ async function submitForm() {
 
 async function handleConfirmAction() {
   snackbar.value.show = false;
+  validationErrors.value = {}; // Limpiar errores de validación previos
+  formAlertMessage.value = ''; // Limpiar la alerta general del formulario
+  showFormAlert.value = false;
 
   try {
-    const rolData = {
+    const rolData: { nombre: string; descripcion: string; estado?: string } = {
       nombre: nombre.value,
       descripcion: descripcion.value,
-      estado: estado.value,
     };
+    // El estado solo se añade si estamos editando, ya que al crear se fuerza a 'activo' en el backend
+    // Esto es una convención, asegúrate de que tu backend lo maneje así.
+    if (isEditing.value) {
+      rolData.estado = estado.value;
+    }
 
     if (currentAction.value === 'create') {
-      await crearRol(rolData); // No necesitas el retorno para actualizar, solo recargar
+      await crearRol(rolData);
       snackbar.value = { show: true, message: 'Rol creado exitosamente.', color: 'success' };
     } else if (currentAction.value === 'update') {
-      await actualizarRol(editingRolId.value!, rolData); // No necesitas el retorno
+      await actualizarRol(editingRolId.value!, rolData);
       snackbar.value = { show: true, message: 'Rol actualizado correctamente.', color: 'success' };
     } else if (currentAction.value === 'inactivate') {
       if (rolToDeleteId.value !== null) {
-        await actualizarRol(rolToDeleteId.value, { estado: 'inactivo' }); // No necesitas el retorno
+        await actualizarRol(rolToDeleteId.value, { estado: 'inactivo' });
         snackbar.value = { show: true, message: 'Rol inactivado correctamente.', color: 'success' };
       }
     } else if (currentAction.value === 'activate') {
       if (rolToActivateId.value !== null) {
-        await actualizarRol(rolToActivateId.value, { estado: 'activo' }); // No necesitas el retorno
+        await actualizarRol(rolToActivateId.value, { estado: 'activo' });
         snackbar.value = { show: true, message: 'Rol activado correctamente.', color: 'success' };
       }
     } else if (currentAction.value === 'delete_permanent') {
@@ -107,14 +149,27 @@ async function handleConfirmAction() {
       }
     }
 
-    // !!! IMPORTANTE: Recargar los roles después de CUALQUIER operación exitosa !!!
+    // Recargar los roles y resetear el formulario después de CUALQUIER operación exitosa
     await cargarRoles();
     resetForm();
 
   } catch (err: any) {
-    const errorMessage = err?.response?.data?.message || 'Error al procesar la operación del rol.';
-    snackbar.value = { show: true, message: errorMessage, color: 'error' };
+    console.error('Error en handleConfirmAction:', err);
+    // MANEJO DE ERRORES DE VALIDACIÓN DEL BACKEND (código 422 de AdonisJS/VineJS)
+    // Se ajusta para que el mensaje general "crea roles únicos" aparezca en la alerta del formulario.
+    if (err.response && err.response.status === 422 && err.response.data && err.response.data.messages) {
+      // No se puebla validationErrors.value[error.field] aquí para evitar mensajes por campo
+      // para la unicidad. Solo se activa la alerta general del formulario.
+      formAlertMessage.value = 'Por favor, crea roles únicos.';
+      showFormAlert.value = true;
+      snackbar.value = { show: true, message: 'Se encontraron errores de validación. Por favor, revisa el formulario.', color: 'warning' };
+    } else {
+      // Para otros errores (ej. 500 Internal Server Error, 404 Not Found, o errores no estructurados)
+      const errorMessage = err?.response?.data?.message || 'Error al procesar la operación del rol. Intenta de nuevo más tarde.';
+      snackbar.value = { show: true, message: errorMessage, color: 'error' };
+    }
   } finally {
+    // Siempre cerrar el diálogo de confirmación y limpiar variables temporales
     showConfirmDialog.value = false;
     currentAction.value = '';
     rolToDeleteId.value = null;
@@ -129,6 +184,7 @@ function editRol(rol: any) {
   nombre.value = rol.nombre;
   descripcion.value = rol.descripcion;
   estado.value = rol.estado;
+  resetValidation(); // Importante: Limpiar validaciones al entrar en modo edición para no arrastrar errores previos.
   window.scrollTo({ top: 0, behavior: 'smooth'})
 }
 
@@ -147,7 +203,7 @@ function handleDeletePermanentlyRol(id: number) {
   confirmDialogTitle.value = '¡ADVERTENCIA! Eliminación Permanente de Rol';
   confirmDialogMessage.value = 'Esta acción eliminará el rol de forma definitiva de la base de datos y no se podrá recuperar. ¿Estás absolutamente seguro?';
   confirmDialogConfirmText.value = 'Eliminar PERMANENTEMENTE';
-  confirmDialogConfirmColor.value = 'red darken-3';
+  confirmDialogConfirmColor.value = 'red darken-3'; // Vuetify 2.x color. En Vuetify 3 usa 'error-darken-3' o similar si está en tu tema.
   currentAction.value = 'delete_permanent';
   showConfirmDialog.value = true;
 }
@@ -164,10 +220,7 @@ function handleActivateRol(id: number) {
 
 function handleCancelAction() {
   console.log('Acción de rol cancelada por el usuario.');
-  rolToDeleteId.value = null;
-  rolToActivateId.value = null;
-  rolToDeletePermanentlyId.value = null;
-  currentAction.value = '';
+  resetForm(); // Resetear también limpia validaciones y oculta el snackbar
   showConfirmDialog.value = false;
 }
 
@@ -180,11 +233,23 @@ function resetForm() {
   rolToDeleteId.value = null
   rolToActivateId.value = null
   rolToDeletePermanentlyId.value = null
+  resetValidation(); // Resetear también las validaciones de Vuetify y de los errores del backend
+  snackbar.value.show = false; // Ocultar snackbar
+  formAlertMessage.value = ''; // Limpiar la alerta general del formulario
+  showFormAlert.value = false;
+}
+
+// FUNCIÓN CLAVE: Para resetear las validaciones del formulario y los errores del backend
+function resetValidation() {
+  validationErrors.value = {}; // Limpiar los errores de validación del backend
+  if (form.value) {
+    form.value.resetValidation(); // Método de Vuetify 3 para resetear el estado de validación visual de los campos.
+  }
 }
 
 onMounted(() => {
   cargarRoles();
-  sortByIdDesc();
+  sortByIdDesc(); // Ordenar por ID descendente al cargar
 });
 
 const filteredRoles = computed(() => {
@@ -221,10 +286,31 @@ const sortByIdDesc = () => {
     <v-card class="mb-5" outlined>
       <v-card-title class="text-h5 text-center">Gestión de Roles</v-card-title>
       <v-card-text>
-        <v-form @submit.prevent="submitForm" class="form" style="color: black">
+        <!-- Alerta general para el formulario -->
+        <v-alert
+          v-if="showFormAlert"
+          type="warning"
+          variant="tonal"
+          class="mb-4"
+          closable
+          v-model="showFormAlert"
+        >
+          {{ formAlertMessage }}
+        </v-alert>
+
+        <!-- VUETIFY FORM: Vincula el formulario con la ref `form` para poder acceder a sus métodos -->
+        <v-form ref="form" @submit.prevent="submitForm" class="form" style="color: black">
           <v-row>
             <v-col cols="12">
-              <v-text-field label="Nombre del Rol" v-model="nombre" required outlined />
+              <v-text-field
+                label="Nombre del Rol"
+                v-model="nombre"
+                required
+                outlined
+                clearable
+                :error-messages="validationErrors.nombre" 
+                :rules="[rules.required, rules.minLength, rules.maxLength]"
+              />
             </v-col>
             <v-col cols="12">
               <v-text-field
@@ -232,24 +318,30 @@ const sortByIdDesc = () => {
                 v-model="descripcion"
                 outlined
                 counter
-                maxlength="500"
-                hint="Proporciona una breve descripción del rol."
+                clearable
+                maxlength="255"
+                hint="Proporciona una breve descripción del rol. (Máx. 255 caracteres)"
+                :error-messages="validationErrors.descripcion"
+                :rules="[rules.descriptionMaxLength]"
               />
             </v-col>
-            <v-col cols="12" v-if="isEditing"> <v-select
+            <v-col cols="12" v-if="isEditing">
+              <v-select
                 label="Estado del Rol"
                 v-model="estado"
                 :items="['activo', 'inactivo']"
                 outlined
                 required
+                :error-messages="validationErrors.estado"
+                :rules="[rules.estadoRequired]"
               ></v-select>
             </v-col>
           </v-row>
 
           <div class="d-flex justify-start">
-            <v-btn v-if="isEditing" color="secondary" @click="resetForm" class="mr-2">Cancelar</v-btn>
-            <v-btn v-if="!isEditing" color="grey" text @click="resetForm" class="mr-2">Limpiar</v-btn>
-            <v-btn color="primary" type="submit">Guardar Rol</v-btn>
+            <v-btn v-if="isEditing" color="secondary" @click="resetForm" class="mr-2">Cancelar Edición</v-btn>
+            <v-btn v-if="!isEditing" color="grey" text @click="resetForm" class="mr-2">Limpiar Formulario</v-btn>
+            <v-btn color="primary" type="submit">{{ isEditing ? 'Actualizar Rol' : 'Crear Rol' }}</v-btn>
           </div>
         </v-form>
       </v-card-text>
@@ -336,5 +428,11 @@ const sortByIdDesc = () => {
 <style scoped>
 .form {
   padding: 1rem;
+}
+/* Estilos adicionales para mensajes de error si no usas Vuetify directamente para todos los mensajes */
+.error-message {
+  color: red;
+  font-size: 0.85em;
+  margin-top: 5px;
 }
 </style>
