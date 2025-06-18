@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { obtenerRoles, crearRol, actualizarRol, eliminarRolPermanentemente } from '../services/CreacionRoles' 
+import { obtenerRoles, crearRol, actualizarRol, eliminarRolPermanentemente } from '../services/CreacionRoles'
 import ConfirmDialog from '../components/Confirmardialogo.vue';
 
 const roles = ref<any[]>([])
@@ -22,8 +22,8 @@ const confirmDialogTitle = ref('');
 const confirmDialogMessage = ref('');
 const confirmDialogConfirmText = ref('');
 const confirmDialogConfirmColor = ref('');
-const currentAction = ref(''); 
-const rolToDeleteId = ref<number | null>(null); 
+const currentAction = ref('');
+const rolToDeleteId = ref<number | null>(null);
 const rolToActivateId = ref<number | null>(null);
 const rolToDeletePermanentlyId = ref<number | null>(null);
 
@@ -106,9 +106,9 @@ async function handleConfirmAction() {
         snackbar.value = { show: true, message: 'Rol eliminado definitivamente.', color: 'success' };
       }
     }
-    
+
     // !!! IMPORTANTE: Recargar los roles después de CUALQUIER operación exitosa !!!
-    await cargarRoles(); 
+    await cargarRoles();
     resetForm();
 
   } catch (err: any) {
@@ -191,7 +191,7 @@ const filteredRoles = computed(() => {
   let rolesFiltrados = roles.value;
 
   if (search.value) {
-    const searchTerm = search.value.toLowerCase();
+    const searchTerm = search.value.trim().toLowerCase();
     rolesFiltrados = rolesFiltrados.filter(r =>
       r.nombre.toLowerCase().includes(searchTerm) ||
       (r.descripcion && r.descripcion.toLowerCase().includes(searchTerm))

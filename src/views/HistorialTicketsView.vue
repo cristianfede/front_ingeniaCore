@@ -35,6 +35,7 @@
       >
         <template #item="{ item }">
           <tr v-if="coincideConBusqueda(item)" @click="irADetalle(item.id)">
+            <td>{{ item.id }}</td>
             <td>{{ item.titulo }}</td>
             <td>
               <v-chip :color="getPrioridadColor(item.prioridad?.nombre)">
@@ -74,6 +75,7 @@ const search = ref('')
 
 // 🔁 Columnas
 const headers = [
+  { title: 'ID', key: 'id' },
   { title: 'Título', key: 'titulo' },
   { title: 'Prioridad', key: 'prioridad.nombre' },
   { title: 'Estado', key: 'estado.nombre' },
@@ -91,7 +93,7 @@ const headers = [
 })*/
 
 function coincideConBusqueda(item: any): boolean {
-  const texto = search.value.toLowerCase()
+  const texto = search.value. trim().toLowerCase()
   return (
     item.titulo?.toLowerCase().includes(texto) ||
     item.estado?.nombre?.toLowerCase().includes(texto) ||

@@ -14,6 +14,7 @@
             <h3 class="text-2xl font-semibold mb-4 section-title-blue">Foto de Perfil</h3>
             <div class="avatar-container" @click="triggerFileInput">
               <img
+                class="profile-avatar"
                 :src="profilePicturePreview || authStore.user.profilePictureUrl || 'https://i.pravatar.cc/160?img=3'"
                 alt="Foto de Perfil"
                 @error="handleImageError"
@@ -22,6 +23,11 @@
                 <v-icon>mdi-camera</v-icon>
               </label>
             </div>
+
+            <p v-if="validationError" class="text-center text-red-500 text-sm mt-2">
+              {{ validationError }}
+            </p>
+
             <input
               type="file"
               ref="profilePictureInput"
@@ -53,14 +59,19 @@
             </div>
           </div>
 
-          <div class="info-section col-span-1 md:col-span-2 text-center"> <h3 class="text-2xl font-semibold mb-4 section-title-green">Roles Asignados</h3>
-            <div v-if="authStore.user.roles?.length" class="w-full"> <ul class="list-disc list-inside inline-block text-left space-y-2"> <li v-for="role in authStore.user.roles" :key="role.id" class="info-text">
-                  {{ role.nombre }}
-                </li>
-              </ul>
+          <!-- Sección roles -->
+            <div class="info-section col-span-1 md:col-span-2">
+              <h3 class="text-2xl font-semibold mb-4 section-title-green">Rol Asignado</h3>
+              <div v-if="authStore.user.rol" class="rol-badge">
+                {{ authStore.user.rol.nombre }}
+              </div>
+              <p v-else class="info-text-secondary text-center">No hay rol asignado.</p>
             </div>
-            <p v-else class="info-text-secondary">No hay roles asignados.</p>
+
+            <div v-if="authStore.user.tipoUsuario === 'externo' && authStore.user.empresa" class="info-section col-span-1 md:col-span-2">
+            <p class="info-text">IngeniaCore</p>
           </div>
+
 
           <div v-if="authStore.user.tipoUsuario === 'externo' && authStore.user.empresa" class="info-section col-span-1 md:col-span-2">
             <h3 class="text-2xl font-semibold mb-4 section-title-purple">Información de la Empresa</h3>
@@ -76,6 +87,8 @@
 
           </div>
 
+
+        <!-- Estado de carga -->
         <div v-else class="text-center mt-12 p-8 loading-section">
           <p class="text-xl font-semibold loading-text">Cargando información del usuario...</p>
         </div>
@@ -98,6 +111,7 @@ import { uploadFile } from '@/services/uploadService';
 
 const authStore = authSetStore();
 
+const validationError = ref<string | null>(null);
 const profilePictureInput = ref<HTMLInputElement|null>(null);
 const selectedFile = ref<File|null>(null);
 const profilePicturePreview = ref<string|null>(null);
@@ -121,18 +135,48 @@ const handleImageError = (e: Event) => {
 };
 
 const triggerFileInput = () => {
+  validationError.value = null;
   profilePictureInput.value?.click();
 };
 
 const handleFileChange = (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0] ?? null;
-  selectedFile.value = file;
+
+  selectedFile.value = null;
+  profilePicturePreview.value = null;
+  validationError.value = null;
+
   if (file) {
+    const maxSizeInBytes = 2 * 1024 * 1024; // 2 MB
+    if (file.size > maxSizeInBytes) {
+      validationError.value = 'El tamaño máximo permitido es de 2 MB.';
+      profilePictureInput.value!.value = '';
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onload = () => profilePicturePreview.value = reader.result as string;
+    reader.onload = () => {
+      const img = new Image();
+      img.src = reader.result as string;
+
+      img.onload = () => {
+        const width = img.width;
+        const height = img.height;
+        const aspectRatio = width / height;
+
+        const lowerBound = 0.95;
+        const upperBound = 1.05;
+
+        if (aspectRatio >= lowerBound && aspectRatio <= upperBound) {
+          selectedFile.value = file;
+          profilePicturePreview.value = reader.result as string;
+        } else {
+          validationError.value = 'Solo se permiten imágenes cuadradas (proporción 1:1, (400x400 px) máximo 2 MB)';
+          profilePictureInput.value!.value = '';
+        }
+      };
+    };
     reader.readAsDataURL(file);
-  } else {
-    profilePicturePreview.value = null;
   }
 };
 
@@ -164,13 +208,10 @@ const uploadProfilePicture = async () => {
     uploading.value = false;
     selectedFile.value = null;
     profilePicturePreview.value = null;
+    validationError.value = null;
+
   }
 };
-
-// Se ha eliminado la función editProfile ya que el botón fue removido
-// const editProfile = () => {
-//   // Lógica para editar perfil
-// };
 </script>
 
 <style scoped>
@@ -240,9 +281,11 @@ const uploadProfilePicture = async () => {
 }
 
 .profile-avatar {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain; /* Ajusta la imagen dentro sin recortarla */
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* esto hace que la imagen se recorte pero llene el círculo */
+  object-position: center; /* centra la imagen */
+  border-radius: 50%; /* por si falta, asegura que el img también sea circular */
   display: block;
 }
 
@@ -293,7 +336,7 @@ const uploadProfilePicture = async () => {
 }
 
 .section-title-green {
-  color: #4CAF50; /* Verde de Vuetify para títulos de sección */
+  color: #020202; /* Verde de Vuetify para títulos de sección */
   font-family: 'Inter', sans-serif;
   font-weight: 600;
   text-align: center;
@@ -309,7 +352,6 @@ const uploadProfilePicture = async () => {
 }
 
 /* La sección 'Empresa Asociada' fue eliminada, así que no necesitamos este estilo */
-/*
 .section-title-yellow {
   color: #FFC107;
   font-family: 'Inter', sans-serif;
@@ -317,7 +359,6 @@ const uploadProfilePicture = async () => {
   text-align: center;
   width: 100%;
 }
-*/
 
 .info-label {
   color: #333333; /* Etiquetas en color oscuro */
@@ -334,21 +375,6 @@ const uploadProfilePicture = async () => {
   color: #777777; /* Texto secundario en gris más claro */
   font-family: 'Inter', sans-serif;
 }
-
-/* El estilo para el botón de edición fue eliminado */
-/*
-.edit-button {
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  padding: 12px 30px;
-  border-radius: 8px;
-  transition: background-color 0.3s ease;
-}
-
-.edit-button:hover {
-  background-color: #1565C0 !important;
-}
-*/
 
 /* Estilos para el mensaje de carga */
 .loading-section {
@@ -404,10 +430,38 @@ const uploadProfilePicture = async () => {
 .list-disc { list-style-type: disc; }
 .list-inside { list-style-position: inside; }
 
-/* El estilo para el icono de Font Awesome fue eliminado si no es necesario */
-/*
-.fa-edit {
-  margin-right: 0.5rem;
+/* Estilos compartidos para cuadros */
+.shared-box {
+  margin-top: 20px; /* Espaciado */
+  text-align: center; /* Centra el texto */
+  background-color: #f9f9f9; /* Fondo claro */
+  padding: 10px 20px; /* Espaciado interno */
+  border-radius: 5px; /* Bordes redondeados */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Sombra suave */
 }
-*/
+
+.rol-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #1e88e5, #42a5f5, #64b5f6);
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  border-radius: 20px;
+  text-align: center;
+  margin: 0 auto;
+  box-shadow: 0 4px 15px rgba(30, 136, 229, 0.6);
+  border: 2px solid white;
+  transition: all 0.3s ease;
+  cursor: default;
+}
+
+.rol-badge:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(30, 136, 229, 0.8);
+}
+
+
 </style>
+
+

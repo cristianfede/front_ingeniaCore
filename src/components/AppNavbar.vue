@@ -51,7 +51,7 @@
 import { onMounted, ref } from 'vue'; // También podrías importar `onUnmounted` si vas a usar polling
 import { authSetStore } from '@/stores/AuthStore';
 import { useRouter } from 'vue-router';
-import { obtenerNotificaciones, marcarComoLeida } from '@/services/notificacionService'
+import { obtenerNotificaciones, marcarComoLeida } from '@/services/NotificacionService'
 
 const authStore = authSetStore();
 const router = useRouter();

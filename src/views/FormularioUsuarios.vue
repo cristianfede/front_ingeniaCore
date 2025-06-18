@@ -278,7 +278,7 @@ onMounted(async () => {
 const filteredUsers = computed(() =>
   usuarios.value.filter((u) =>
     Object.values(u).some((val) =>
-      String(val || '').toLowerCase().includes(search.value.toLowerCase())
+      String(val || '').toLowerCase().includes(search.value.trim().toLowerCase())
     )
   )
 );

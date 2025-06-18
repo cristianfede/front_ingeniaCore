@@ -57,7 +57,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { authSetStore } from '@/stores/AuthStore'
-import { obtenerNotificaciones, marcarComoLeida } from '@/services/notificacionService'
+import { obtenerNotificaciones, marcarComoLeida } from '@/services/NotificacionService'
 
 const router = useRouter()
 const authStore = authSetStore()

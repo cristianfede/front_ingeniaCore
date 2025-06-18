@@ -85,6 +85,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { crearEmpresa, obtenerEmpresas, actualizarEmpresa, eliminarEmpresa } from '../services/empresasService'; // ¡CORREGIDO: Cambiado a empresasService!
 import ConfirmDialog from '../components/Confirmardialogo.vue'; // Asegúrate de que la ruta sea correcta
+import { transformItem } from 'vuetify/lib/composables/list-items.mjs';
 
 const nombre = ref('');
 const nit = ref('');
@@ -157,7 +158,7 @@ async function cargarEmpresas() {
 
 const filteredEmpresas = computed(() =>
   empresas.value.filter((e) =>
-    Object.values(e).some((val) => String(val).toLowerCase().includes(search.value.toLowerCase()))
+    Object.values(e).some((val) => String(val).trim().toLowerCase().includes(search.value.toLowerCase()))
   )
 );
 
