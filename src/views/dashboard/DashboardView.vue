@@ -56,7 +56,7 @@
           </v-col>
         </v-row>
 
-        </v-card-text>
+      </v-card-text>
       <v-overlay :model-value="loading" class="align-center justify-center">
         <v-progress-circular
           color="primary"
@@ -145,13 +145,13 @@ onMounted(async () => {
 
 /* Colores Base Definidos */
 :root {
-  --color-primary-blue: #0A72ED; /* Un azul primario más vibrante y distintivo */
-  --color-dark-blue: #004D99; /* Azul oscuro para títulos y elementos importantes */
-  --color-light-blue: #EBF5FB; /* Azul muy pálido para fondos sutiles */
-  --color-grey-dark: #333333; /* Gris oscuro para el texto principal */
-  --color-white: #FFFFFF; /* Blanco puro para fondos de tarjeta */
-  --color-metric-bg: #F0F8FF; /* Un azul casi blanco para las tarjetas de métricas */
-  --color-section-bg: #F8F8F8; /* Un gris muy claro para las tarjetas de sección */
+  --color-primary-blue: #0A72ED;
+  --color-dark-blue: #004D99;
+  --color-light-blue: #EBF5FB;
+  --color-grey-dark: #333333;
+  --color-white: #FFFFFF;
+  --color-metric-bg: #F0F8FF;
+  --color-section-bg: #F8F8F8;
 }
 
 /* Estilos para el contenedor principal de la tarjeta del dashboard */
@@ -162,78 +162,80 @@ onMounted(async () => {
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  border: 1px solid #E0E0E0; /* Borde sutil para la tarjeta principal */
+  border: 1px solid #E0E0E0;
 }
 
 .dashboard-title {
   color: rgb(57, 57, 173);
   font-family: 'Inter', sans-serif;
-  font-weight: 900; /* Aún más audaz */
-  font-size: 2.8rem !important; /* Más grande para el título de bienvenida */
-  background-color: var(--color-light-blue); /* Fondo azul pálido para el título */
-  padding: 30px 0 !important; /* Más padding para espacio */
-  border-bottom: 2px solid var(--color-primary-blue); /* Línea de resalte más fuerte */
-  letter-spacing: -0.5px; /* Ligeramente más junto para una mejor lectura */
+  font-weight: 900;
+  font-size: 2.8rem !important;
+  background-color: var(--color-light-blue);
+  padding: 30px 0 !important;
+  border-bottom: 2px solid var(--color-primary-blue);
+  letter-spacing: -0.5px;
 }
 
 .dashboard-subtitle {
   color:black;
   font-family: 'Inter', sans-serif;
-  font-size: 1.3rem !important; /* Más grande y más fácil de leer */
-  margin-top: 20px; /* Más espacio superior */
+  font-size: 1.3rem !important;
+  margin-top: 20px;
   line-height: 1.6;
-  padding: 0 20px; /* Padding horizontal para evitar que el texto toque los bordes */
+  padding: 0 20px;
 }
 
 /* Estilos para las tarjetas de métricas */
 .metric-card {
-  background-color: var(--color-metric-bg); /* Fondo azul muy claro para métricas */
+  background-color: var(--color-metric-bg);
   border-radius: 12px;
-  padding: 30px; /* Más padding para mayor aire */
+  padding: 30px;
   text-align: center;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  border: 1px solid #CDE0F5; /* Borde más visible */
+  border: 1px solid #CDE0F5;
 }
 
 .metric-card:hover {
-  transform: translateY(-10px); /* Efecto de elevación más pronunciado */
-  box-shadow: 0 15px 30px rgba(70, 3, 255, 0.18); /* Sombra más intensa al pasar el ratón */
+  transform: translateY(-10px);
+  box-shadow: 0 15px 30px rgba(70, 3, 255, 0.18);
 }
 
 .metric-title {
   color: var(--color-dark-blue);
   font-family: 'Inter', sans-serif;
   font-weight: 700;
-  font-size: 1.45rem !important; /* Título de métrica un poco más grande */
+  font-size: 1.45rem !important;
   margin-bottom: 15px;
 }
 
 .metric-value {
-  color:rgb(54, 54, 223); /* Valor en azul primario llamativo */
+  color:rgb(54, 54, 223);
   font-family: 'Inter', sans-serif;
   font-weight: 900;
-  font-size: 5rem !important; /* ¡Aún más grande para destacar! */
+  font-size: 5rem !important;
   line-height: 1;
   margin-bottom: 15px;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.1); /* Sombra más definida para el número */
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
 }
 
 .metric-subtitle {
-  color: rgb(0, 0, 0); /* El color que ya tenías */
-  font-family: 'Montserrat', sans-serif; /* Usamos Montserrat para que sea consistente con los títulos */
-  font-size: 1.02rem !important; /* Ligeramente más grande para mayor impacto */
+  color: rgb(0, 0, 0);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.02rem !important;
   line-height: 1.4;
-  font-weight: 900; /* ¡Esto hace que la letra sea fuerte! */
-  letter-spacing: 0.5px; /* Un pequeño espaciado para mejor legibilidad en negrita */
+  font-weight: 900;
+  letter-spacing: 0.5px;
 }
 
 /* Estilos para las tarjetas de sección (Actividad Reciente) */
 .section-card {
-  background-color: var(--color-section-bg); /* Fondo gris muy claro para secciones */
-  border-radius: 50px;
-  padding: 30px; /* Más padding */
+  background-color: var(--color-section-bg);
+  border-radius: 16px; /* La tarjeta contenedora ya tiene un buen redondeo */
+  padding: 30px;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  border: 1px solid #6d62ca; /* Borde sutil */
+  border: 1px solid #6d62ca;
+  /* IMPORTANTE: Añadir overflow: hidden para que los redondeos internos no se "salgan" */
+  overflow: hidden;
 }
 
 .section-card:hover {
@@ -245,48 +247,64 @@ onMounted(async () => {
   color: rgb(22, 76, 224);
   font-family: 'Inter', sans-serif;
   font-weight: 700;
-  font-size: 1.8rem !important; /* Título de sección más grande */
+  font-size: 1.8rem !important;
   margin-bottom: 25px;
   padding-bottom: 12px;
-  border-bottom: 3px solid var(--color-primary-blue); /* Línea de resalte más gruesa */
+  border-bottom: 3px solid var(--color-primary-blue);
 }
 
 /* Estilos para los elementos de lista dentro de las secciones */
-.v-list-item-title {
+/* Aquí está la corrección para el recuadro blanco de los tickets */
+.v-list {
+    background-color: var(--color-white) !important; /* Asegura el fondo blanco para la lista */
+    border-radius: 12px; /* Redondea la lista completa */
+    overflow: hidden; /* Asegura que los contenidos redondeados no se salgan */
+    padding: 0 !important; /* Elimina padding por defecto si lo hay */
+}
+
+.v-list-item {
   font-family: 'Inter', sans-serif;
   font-weight: 600;
-  color: rgb(10, 1, 1); /* Texto principal de la lista en gris oscuro */
-  font-size: 1.15rem !important; /* Un poco más grande y claro */
+  color: rgb(10, 1, 1);
+  font-size: 1.15rem !important;
+  margin-bottom: 0px; /* Elimina margen inferior si hay, para que el borde sea el único separador */
+  padding: 12px 16px !important; /* Ajusta el padding para los ítems */
+  border-bottom: 1px solid #EFEFEF; /* Línea separadora sólida y más clara */
+}
+.v-list-item:first-child {
+    border-top-left-radius: 12px; /* Redondea la primera esquina superior izquierda */
+    border-top-right-radius: 12px; /* Redondea la primera esquina superior derecha */
+}
+.v-list-item:last-child {
+  border-bottom: none; /* Elimina el borde inferior del último ítem */
+    border-bottom-left-radius: 12px; /* Redondea la última esquina inferior izquierda */
+    border-bottom-right-radius: 12px; /* Redondea la última esquina inferior derecha */
+}
+
+.v-list-item-title {
+  font-weight: 600;
+  color: rgb(10, 1, 1);
+  font-size: 1.15rem !important;
   margin-bottom: 4px;
 }
 
 .v-list-item-subtitle {
-  font-family: 'Inter', sans-serif;
-  color: var(--color-grey-medium); /* Subtítulo de la lista en gris medio para buena legibilidad */
-  font-size: 0.95rem !important; /* Ligeramente más grande y más fácil de leer */
+  color: var(--color-grey-dark); /* Usamos gris oscuro para subtítulos para mayor legibilidad */
+  font-size: 0.95rem !important;
 }
 
-/* Espaciado y borde de lista */
-.v-list-item {
-  margin-bottom: 12px; /* Más espacio entre ítems */
-  padding-bottom: 12px;
-  border-bottom: 1px solid #EFEFEF; /* Línea separadora sólida y más clara */
-}
-.v-list-item:last-child {
-  border-bottom: none;
-}
 
 /* Estilos para el texto "No hay actividad reciente" */
 .text-grey {
-  color: var(--color-grey-light) !important; /* Texto en gris claro para este mensaje */
+  color: var(--color-grey-dark) !important; /* Cambiado a gris oscuro para legibilidad */
   font-style: italic;
   padding: 25px;
-  font-size: 1.1rem !important; /* Más grande y legible */
+  font-size: 1.1rem !important;
 }
 
 /* Overlay y Alert */
 .v-overlay {
-  background-color: rgba(255, 255, 255, 0.85); /* Fondo de overlay más blanco y opaco */
+  background-color: rgba(255, 255, 255, 0.85);
 }
 
 .v-alert {
