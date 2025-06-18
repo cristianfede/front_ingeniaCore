@@ -1,7 +1,6 @@
 <template>
   <div class="header-buttons">
     <router-link to="/login" class="btn" active-class="active"> Iniciar Sesión </router-link>
-    <router-link to="/register" class="btn" active-class="active"> Registrarse </router-link>
     <router-link to="/reset-password" class="btn" active-class="active">
       ¿Olvidó su contraseña?
     </router-link>
@@ -19,7 +18,7 @@
 .header-buttons {
   position: absolute;
   top: 10px;
-  right: 10px;
+  right: 50px;
   display: flex;
   gap: 10px;
 }
@@ -49,8 +48,8 @@
 
 /* Estilos para el botón activo */
 .active {
-  background: #4caf50; /* Color de fondo verde */
-  border: 1px solid #4caf50;
+  background: #fcfcfc0a; /* Color de fondo verde */
+  border: 1px solid #ffffff;
   color: white;
 }
 </style>

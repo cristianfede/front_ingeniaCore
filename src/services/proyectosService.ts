@@ -1,6 +1,4 @@
-// src/services/proyectosService.ts
-
-const API_BASE_URL = 'http://localhost:3333/api'; // Cambia por tu URL base si es necesario
+export const API_BASE_URL = 'http://localhost:3333/api'; // <--- Añadido 'export' aquí
 
 /**
  * Obtiene todos los proyectos.
@@ -54,6 +52,11 @@ export async function crearProyecto(proyectoData: { nombre: string; empresa_id: 
         });
 
         if (!response.ok) {
+            // Manejo específico para el error de conflicto (nombre duplicado)
+            if (response.status === 409) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'El nombre del proyecto ya existe.');
+            }
             const errorData = await response.json();
             throw new Error(errorData.mensaje || 'Error al crear proyecto');
         }
@@ -84,6 +87,11 @@ export async function actualizarProyecto(id: number, proyectoData: { nombre: str
         });
 
         if (!response.ok) {
+             // Manejo específico para el error de conflicto (nombre duplicado)
+            if (response.status === 409) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'El nombre del proyecto ya existe por otro proyecto.');
+            }
             const errorData = await response.json();
             throw new Error(errorData.mensaje || 'Error al actualizar proyecto');
         }
@@ -116,6 +124,43 @@ export async function eliminarProyecto(id: number) {
         return response.status === 204 ? {} : await response.json();
     } catch (error) {
         console.error('Error en proyectoService (eliminarProyecto):', error);
+        throw error;
+    }
+}
+
+/**
+ * Verifica si un nombre de proyecto ya existe en la base de datos.
+ * @param nombre El nombre del proyecto a verificar.
+ * @param excludeId Opcional. El ID del proyecto actual (para actualizaciones).
+ * @returns Un objeto con `isUnique` (booleano) y un `message`.
+ */
+export async function verificarNombreProyectoUnico(nombre: string, excludeId: number | null = null) {
+    try {
+        let url = `${API_BASE_URL}/proyectos/check-unique-name?name=${encodeURIComponent(nombre)}`;
+        if (excludeId !== null) {
+            url += `&excludeId=${excludeId}`;
+        }
+
+        const response = await fetch(url);
+
+        // Si la respuesta no es OK (por ejemplo, 409 Conflict), es porque el nombre no es único.
+        // Si es 200 OK, el nombre es único.
+        if (response.ok) {
+            const data = await response.json();
+            return data; // Devolverá { isUnique: true, message: '...' }
+        } else if (response.status === 409) {
+            const data = await response.json();
+            return data; // Devolverá { isUnique: false, message: '...' }
+        } else {
+            // Otros errores del servidor
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error al verificar la unicidad del nombre del proyecto.');
+        }
+    } catch (error) {
+        console.error('Error en proyectosService (verificarNombreProyectoUnico):', error);
+        // Si hay un error de red o similar, asumimos que no se pudo verificar.
+        // Podrías decidir qué comportamiento es el más seguro aquí.
+        // Por ahora, lanzamos el error para que el componente lo maneje.
         throw error;
     }
 }
