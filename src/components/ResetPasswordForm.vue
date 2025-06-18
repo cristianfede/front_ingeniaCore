@@ -105,8 +105,38 @@ h2 {
   font-size: 18px; /* <--- Aumentado el tamaño de fuente del input */
   outline: none;
   background-color: white;
-  color: #333;
+  color: #333; /* Color de la letra escrita en el input (gris oscuro) */
+  text-align: center; /* <--- ¡Aquí está el cambio para centrar el texto! */
 }
+
+/* Estilos para el texto del placeholder (también gris oscuro y centrado) */
+.input-group input::placeholder {
+  color: #666; /* Un gris oscuro para que se vea bien sobre blanco */
+  text-align: center; /* <--- ¡También para el placeholder! */
+}
+
+.input-group input::-webkit-input-placeholder { /* Chrome, Opera, Safari */
+  color: #666;
+  text-align: center;
+}
+
+.input-group input::-moz-placeholder { /* Firefox 19+ */
+  color: #666;
+  opacity: 1;
+  text-align: center;
+}
+
+.input-group input:-ms-input-placeholder { /* IE 10+ y Edge */
+  color: #666;
+  text-align: center;
+}
+
+.input-group input:-moz-placeholder { /* Firefox 4-18 */
+  color: #666;
+  opacity: 1;
+  text-align: center;
+}
+
 
 button {
   width: 100%;

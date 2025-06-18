@@ -30,7 +30,6 @@
 
     <p v-if="message" :class="messageClass">{{ message }}</p>
 
-    <!-- Solo se mostrará si el cambio fue exitoso, y el usuario hace clic para ir a login -->
     <router-link v-if="success" to="/login" class="login-again">
       Iniciar sesión
     </router-link>
@@ -121,7 +120,7 @@ const changePassword = async () => {
   max-width: 400px;
   margin: 0 auto;
   text-align: center;
-  color: white;
+  color: white; /* El texto general del formulario (labels, títulos) seguirá siendo blanco */
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -144,9 +143,37 @@ h2 {
   padding: 10px;
   border: none;
   border-radius: 8px;
-  font-size: 16px;
+  /* Aquí ajustamos el tamaño de la fuente */
+  font-size: 12px; /* Lo cambié de 16px a 14px. Puedes probar con 13px si aún es muy grande. */
   outline: none;
+  background: white; /* Fondo blanco para el input */
+  color: black; /* Color de la letra escrita en el input */
+  text-align: center;
 }
+
+/* Estilos para el texto del placeholder (también negro) */
+.input-group input::placeholder {
+  color: #666; /* Un gris oscuro para que se vea bien sobre blanco, o black */
+}
+
+.input-group input::-webkit-input-placeholder { /* Chrome, Opera, Safari */
+  color: #666;
+}
+
+.input-group input::-moz-placeholder { /* Firefox 19+ */
+  color: #666;
+  opacity: 1;
+}
+
+.input-group input:-ms-input-placeholder { /* IE 10+ y Edge */
+  color: #666;
+}
+
+.input-group input:-moz-placeholder { /* Firefox 4-18 */
+  color: #666;
+  opacity: 1;
+}
+
 
 button {
   width: 100%;
