@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { authSetStore } from '@/stores/AuthStore'
 
+// Importaciones de tus vistas/componentes
 import LoginView from '@/views/LoginView.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import RegisterView from '@/views/RegisterView.vue'
@@ -112,8 +113,11 @@ const router = createRouter({
       meta: { layout: 'MainLayout' },
     },
     {
-      path: '/new-password:token',
+      // RUTA CORREGIDA: Agregado el '/' antes de ':token' y se añadió 'name' y 'props: true'
+      path: '/new-password/:token',
+      name: 'NewPassword', // Se recomienda dar un nombre a la ruta
       component: NewPasswordView,
+      props: true, // Esto permite que el token sea accesible como una prop en NewPasswordView
       meta: { layout: 'AuthLayout' },
     },
     {
