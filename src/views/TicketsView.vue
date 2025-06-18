@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
+import { useForm, useField } from 'vee-validate';
+
 import {
   crearTicket,
   obtenerTickets,
@@ -8,57 +10,129 @@ import {
   obtenerEstados,
   obtenerPrioridades,
   obtenerEmpresas,
-  obtenerTecnicos, // ✅ Ahora importamos la función correcta
+  obtenerTecnicos,
   obtenerCategorias,
   obtenerServicios,
   downloadTicketAttachment
-} from '../services/ticketService'; // Asegúrate que la ruta a ticketService.ts sea correcta
+} from '../services/ticketService';
 import ConfirmDialog from '../components/Confirmardialogo.vue';
 
-// --- Estado para el formulario de Ticket ---
-const titulo = ref('');
-const descripcion = ref('');
-const estado_id = ref<number | null>(null);
-const prioridad_id = ref<number | null>(null);
-const empresa_id = ref<number | null>(null);
-const usuario_asignado_id = ref<number | null>(null);
-const categoria_id = ref<number | null>(null);
-const servicio_id = ref<number | null>(null);
+// --- Custom Validation Rules ---
+const required = (value: any) => {
+  if (value === null || value === undefined || value === '') {
+    return 'Este campo es obligatorio.';
+  }
+  if (typeof value === 'number' && value <= 0) {
+    return 'Selecciona una opción válida.';
+  }
+  return true;
+};
 
+const minLength = (value: string, min: number) => {
+  if (!value || value.length < min) {
+    return `Debe tener al menos ${min} caracteres.`;
+  }
+  return true;
+};
+
+const maxLength = (value: string, max: number) => {
+  if (value && value.length > max) {
+    return `No debe exceder los ${max} caracteres.`;
+  }
+  return true;
+};
+
+const composeRules = (...rules: ((value: any, ...args: any[]) => true | string)[]) => {
+  return (value: any) => {
+    for (const rule of rules) {
+      const result = rule(value);
+      if (result !== true) {
+        return result;
+      }
+    }
+    return true;
+  };
+};
+
+// --- Form Initialization with VeeValidate ---
+const { handleSubmit, resetForm, setValues, errors, meta, validate, setErrors } = useForm();
+
+// --- Field Definitions using useField ---
+const { value: titulo, errorMessage: tituloError, handleBlur: handleTituloBlur } = useField<string>(
+  'titulo',
+  composeRules((v: string) => required(v), (v: string) => minLength(v, 3), (v: string) => maxLength(v, 100)),
+  { initialValue: '' }
+);
+
+const { value: descripcion, errorMessage: descripcionError, handleBlur: handleDescripcionBlur } = useField<string>(
+  'descripcion',
+  composeRules((v: string) => required(v), (v: string) => minLength(v, 5), (v: string) => maxLength(v, 1000)),
+  { initialValue: '' }
+);
+
+const { value: estado_id, errorMessage: estadoIdError } = useField<number | null>(
+  'estado_id',
+  (v: any) => required(v),
+  { initialValue: null }
+);
+
+const { value: prioridad_id, errorMessage: prioridadIdError } = useField<number | null>(
+  'prioridad_id',
+  (v: any) => required(v),
+  { initialValue: null }
+);
+
+const { value: empresa_id, errorMessage: empresaIdError } = useField<number | null>(
+  'empresa_id',
+  (v: any) => required(v),
+  { initialValue: null }
+);
+
+const { value: usuario_asignado_id, errorMessage: usuarioAsignadoIdError } = useField<number | null>(
+  'usuario_asignado_id',
+  (v: any) => required(v),
+  { initialValue: null }
+);
+
+const { value: categoria_id, errorMessage: categoriaIdError } = useField<number | null>(
+  'categoria_id',
+  (v: any) => required(v),
+  { initialValue: null }
+);
+
+const { value: servicio_id, errorMessage: servicioIdError } = useField<number | null>(
+  'servicio_id',
+  (v: any) => required(v),
+  { initialValue: null }
+);
+
+// --- UI States ---
+const isEditing = ref(false);
+const editingTicketId = ref<number | null>(null);
+
+// --- Attachment Handling ---
 const archivoAdjunto = ref<File | null>(null);
 const fileNameDisplay = ref('');
 const existingFileName = ref<string | null>(null);
 const clearExistingAttachment = ref(false);
+const archivoAdjuntoError = ref('');
 
+// --- Snackbar Messages ---
 const snackbar = ref({
   show: false,
   message: '',
   color: 'success',
 });
-const isEditing = ref(false);
-const editingTicketId = ref<number | null>(null);
 
-// --- Listas para los v-select (cargadas desde la API) ---
+// --- Lists for v-select (loaded from API) ---
 const estados = ref<{ id: number; nombre: string }[]>([]);
 const prioridades = ref<{ id: number; nombre: string }[]>([]);
-const empresa = ref<{ id: number; nombre: string }[]>([]);
-
-// ✅ Tipo de dato actualizado: Esperamos 'nombreCompleto' directamente del backend
+const empresas = ref<{ id: number; nombre: string }[]>([]);
 const usuariosAsignados = ref<{ id: number; nombreCompleto: string }[]>([]);
-
 const categorias = ref<{ id: number; nombre: string }[]>([]);
 const servicios = ref<{ id: number; nombre: string }[]>([]);
 
-// ✅ ELIMINADA: Esta propiedad computada ya no es necesaria
-// porque el backend ya devuelve 'nombreCompleto'
-// const usuariosAsignadosFormateados = computed(() =>
-//   usuariosAsignados.value.map(u => ({
-//     ...u,
-//     nombreCompleto: `${u.nombre} ${u.apellido}`
-//   }))
-// );
-
-// --- Variables para el modal de confirmación ---
+// --- Confirmation Modal Variables ---
 const showConfirmDialog = ref(false);
 const confirmDialogTitle = ref('');
 const confirmDialogMessage = ref('');
@@ -68,40 +142,35 @@ const currentAction = ref('');
 const ticketToDeleteId = ref<number | null>(null);
 
 /**
- * Precarga los datos de un ticket en el formulario para su edición.
- * @param ticket El objeto ticket a editar.
+ * Preloads ticket data into the form for editing.
+ * @param ticket The ticket object to edit.
  */
 function editTicket(ticket: any) {
   isEditing.value = true;
   editingTicketId.value = ticket.id;
+
   titulo.value = ticket.titulo;
   descripcion.value = ticket.descripcion;
   estado_id.value = ticket.estado?.id || null;
   prioridad_id.value = ticket.prioridad?.id || null;
   empresa_id.value = ticket.empresa?.id || null;
-  usuario_asignado_id.value = ticket.usuarioAsignado?.id || null; // ✅ Asignación directa del ID
+  usuario_asignado_id.value = ticket.usuarioAsignado?.id || null;
   categoria_id.value = ticket.categoria?.id || null;
   servicio_id.value = ticket.servicio?.id || null;
 
-  // Lógica para el archivo adjunto existente
-  archivoAdjunto.value = null; // Siempre se limpia al editar para nueva subida
-  fileNameDisplay.value = ''; // Se limpia el nombre del archivo seleccionado para nueva subida
-  existingFileName.value = ticket.nombreArchivo || null; // Muestra el nombre del archivo si existe
-  clearExistingAttachment.value = false; // Resetea la bandera al editar
+  archivoAdjunto.value = null;
+  fileNameDisplay.value = '';
+  existingFileName.value = ticket.nombreArchivo || null;
+  clearExistingAttachment.value = false;
+  archivoAdjuntoError.value = '';
 }
 
 /**
- * Maneja el envío del formulario, configurando el modal de confirmación.
+ * Function executed when the form is submitted.
+ * VeeValidate handles prior validation. If valid, the callback is executed.
  */
-async function submit() {
-  if (!titulo.value || !descripcion.value || estado_id.value === null || prioridad_id.value === null) {
-    snackbar.value = {
-      show: true,
-      message: 'Por favor, completa los campos obligatorios del ticket (Título, Descripción, Estado, Prioridad).',
-      color: 'warning',
-    };
-    return;
-  }
+const onSubmit = handleSubmit(async (values) => {
+  console.log('Form is valid, values:', values);
 
   if (isEditing.value) {
     confirmDialogTitle.value = 'Confirmar Actualización';
@@ -117,61 +186,114 @@ async function submit() {
     currentAction.value = 'create';
   }
   showConfirmDialog.value = true;
-}
+});
 
 /**
- * Se ejecuta cuando el usuario confirma una acción en el modal.
- * Realiza la operación CRUD (crear, actualizar, eliminar).
+ * Executed when the user confirms an action in the modal.
+ * Performs the CRUD operation (create, update, delete).
  */
 async function handleConfirmAction() {
   snackbar.value.show = false;
+  archivoAdjuntoError.value = '';
+
+  const formValues = {
+    titulo: titulo.value,
+    descripcion: descripcion.value,
+    estado_id: estado_id.value,
+    prioridad_id: prioridad_id.value,
+    empresa_id: empresa_id.value,
+    usuario_asignado_id: usuario_asignado_id.value,
+    categoria_id: categoria_id.value,
+    servicio_id: servicio_id.value,
+  };
 
   try {
-    const formData = new FormData();
-    formData.append('titulo', titulo.value);
-    formData.append('descripcion', descripcion.value);
-    formData.append('estado_id', String(estado_id.value));
-    formData.append('prioridad_id', String(prioridad_id.value));
-    if (empresa_id.value !== null) formData.append('empresas_id', String(empresa_id.value));
-    if (usuario_asignado_id.value !== null) formData.append('usuario_asignado_id', String(usuario_asignado_id.value));
-    if (categoria_id.value !== null) formData.append('categoria_id', String(categoria_id.value));
-    if (servicio_id.value !== null) formData.append('servicio_id', String(servicio_id.value));
+    if (currentAction.value === 'create' || currentAction.value === 'update') {
+      const formData = new FormData();
+      formData.append('titulo', formValues.titulo as string);
+      formData.append('descripcion', formValues.descripcion as string);
 
-    // Lógica para el archivo adjunto
-    if (archivoAdjunto.value) {
-      formData.append('archivo_adjunto', archivoAdjunto.value);
-    } else if (isEditing.value && clearExistingAttachment.value) {
-      // Si estamos editando y se solicitó borrar el adjunto existente
-      formData.append('clear_adjunto', 'true');
-    }
+      formData.append('estado_id', formValues.estado_id !== null ? String(formValues.estado_id) : '');
+      formData.append('prioridad_id', formValues.prioridad_id !== null ? String(formValues.prioridad_id) : '');
+      formData.append('empresas_id', formValues.empresa_id !== null ? String(formValues.empresa_id) : '');
 
-    if (currentAction.value === 'create') {
-      const nuevoTicket = await crearTicket(formData);
-      tickets.value.unshift(nuevoTicket); // Añadir al principio para que se vea primero
-      // Asegúrate de que la tabla se ordene por ID descendente después de crear
-      sortBy.value = [{ key: 'id', order: 'desc' }];
-      snackbar.value = { show: true, message: 'Ticket creado exitosamente.', color: 'success' };
-    } else if (currentAction.value === 'update') {
-      const actualizado = await actualizarTicket(editingTicketId.value!, formData);
-      const index = tickets.value.findIndex(t => t.id === editingTicketId.value);
-      if (index !== -1) {
-        // Reemplaza el ticket con el actualizado para reflejar el nuevo nombre del archivo
-        tickets.value[index] = actualizado;
+      if (formValues.usuario_asignado_id !== null && formValues.usuario_asignado_id > 0) {
+        formData.append('usuario_asignado_id', String(formValues.usuario_asignado_id));
+      } else if (formValues.usuario_asignado_id === null && isEditing.value) {
+        formData.append('usuario_asignado_id', '');
       }
-      await cargarTickets();
-      snackbar.value = { show: true, message: 'Ticket actualizado correctamente.', color: 'success' };
+
+      if (formValues.categoria_id !== null && formValues.categoria_id > 0) {
+        formData.append('categoria_id', String(formValues.categoria_id));
+      } else if (formValues.categoria_id === null && isEditing.value) {
+        formData.append('categoria_id', '');
+      }
+
+      if (formValues.servicio_id !== null && formValues.servicio_id > 0) {
+        formData.append('servicio_id', String(formValues.servicio_id));
+      } else if (formValues.servicio_id === null && isEditing.value) {
+        formData.append('servicio_id', '');
+      }
+
+      if (archivoAdjunto.value) {
+        formData.append('archivo_adjunto', archivoAdjunto.value);
+      } else if (isEditing.value && clearExistingAttachment.value) {
+        formData.append('clear_adjunto', 'true');
+      }
+
+      if (currentAction.value === 'create') {
+        const nuevoTicket = await crearTicket(formData);
+        tickets.value.unshift(nuevoTicket);
+        sortBy.value = [{ key: 'id', order: 'desc' }];
+        snackbar.value = { show: true, message: 'Ticket creado exitosamente.', color: 'success' };
+      } else if (currentAction.value === 'update') {
+        const actualizado = await actualizarTicket(editingTicketId.value!, formData);
+        const index = tickets.value.findIndex(t => t.id === editingTicketId.value);
+        if (index !== -1) {
+          tickets.value[index] = actualizado;
+        }
+        await cargarTickets();
+        snackbar.value = { show: true, message: 'Ticket actualizado correctamente.', color: 'success' };
+      }
     } else if (currentAction.value === 'delete') {
       if (ticketToDeleteId.value !== null) {
         await eliminarTicket(ticketToDeleteId.value);
         tickets.value = tickets.value.filter(t => t.id !== ticketToDeleteId.value);
-        await cargarTickets(); // Recargar tickets para reflejar la eliminación
+        await cargarTickets();
         snackbar.value = { show: true, message: 'Ticket eliminado correctamente.', color: 'success' };
       }
     }
-    resetForm();
+    resetFormAndState();
   } catch (err: any) {
-    const errorMessage = err?.message || 'Error al procesar la operación del ticket.';
-    snackbar.value = { show: true, message: errorMessage, color: 'error' };
+    console.error('Error during ticket operation:', err);
+    let messageToDisplay = 'Error al procesar la operación del ticket.';
+    let backendErrors: { [key: string]: string } = {};
+
+    if (err.message && err.message.startsWith('{') && err.message.endsWith('}')) {
+      try {
+        const errorObj = JSON.parse(err.message);
+        if (errorObj.errors && Array.isArray(errorObj.errors)) {
+          messageToDisplay = 'Se encontraron errores de validación del servidor. Por favor, revisa los campos marcados.';
+          errorObj.errors.forEach((error: any) => {
+            const fieldName = error.field === 'empresas_id' ? 'empresa_id' : error.field;
+            backendErrors[fieldName] = error.message;
+
+            if (fieldName === 'archivo_adjunto') {
+              archivoAdjuntoError.value = error.message;
+            }
+          });
+          setErrors(backendErrors);
+        } else if (errorObj.message) {
+          messageToDisplay = errorObj.message;
+        }
+      } catch (parseError) {
+        messageToDisplay = err.message;
+      }
+    } else {
+      messageToDisplay = err.message || 'Error desconocido al procesar la operación del ticket.';
+    }
+
+    snackbar.value = { show: true, message: messageToDisplay, color: 'error' };
   } finally {
     showConfirmDialog.value = false;
     currentAction.value = '';
@@ -179,45 +301,39 @@ async function handleConfirmAction() {
 }
 
 /**
- * Resetea el formulario y el estado de edición.
+ * Resets the form and editing state, including VeeValidate.
  */
-function resetForm() {
-  titulo.value = '';
-  descripcion.value = '';
-  estado_id.value = null;
-  prioridad_id.value = null;
-  empresa_id.value = null;
-  usuario_asignado_id.value = null;
-  categoria_id.value = null;
-  servicio_id.value = null;
+function resetFormAndState() {
+  resetForm();
+
+  isEditing.value = false;
+  editingTicketId.value = null;
+  ticketToDeleteId.value = null;
+
   archivoAdjunto.value = null;
   fileNameDisplay.value = '';
   existingFileName.value = null;
   clearExistingAttachment.value = false;
-  isEditing.value = false;
-  editingTicketId.value = null;
-  ticketToDeleteId.value = null;
+  archivoAdjuntoError.value = '';
 }
 
-// --- Estado y lógica para la tabla de Tickets ---
+// --- Ticket Table State and Logic ---
 const tickets = ref<any[]>([]);
 const search = ref('');
 type MySortItem = {
   key: string;
   order: boolean | 'asc' | 'desc' | undefined;
 };
-// Inicialmente, la tabla se ordenará de forma descendente (los más recientes primero)
 const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'desc' }]);
 const sortDesc = ref(false);
 
-// Cabeceras de la tabla
 const headers = [
   { title: 'ID', key: 'id', sortable: false },
   { title: 'Asunto', key: 'titulo', sortable: false },
   { title: 'Empresa', key: 'empresa.nombre', sortable: false },
   { title: 'Prioridad', key: 'prioridad.nombre', sortable: false },
   { title: 'Estado', key: 'estado.nombre', sortable: false },
-  { title: 'Técnico', key: 'usuarioAsignado.nombre', sortable: false }, // Asumiendo que 'usuarioAsignado' tiene una propiedad 'nombre'
+  { title: 'Técnico', key: 'usuarioAsignado.nombreCompleto', sortable: false },
   { title: 'Adjunto', key: 'nombreArchivo', sortable: false },
   { title: 'Acciones', key: 'actions', sortable: false },
 ];
@@ -229,12 +345,6 @@ const sortByIdAsc = () => {
 const sortByIdDesc = () => {
   sortBy.value = [{ key: 'id', order: 'desc' }];
 };
-
-onMounted(async () => {
-  await cargarTickets();
-  await cargarListasReferencia();
-  sortByIdDesc(); // Asegura que la tabla empiece ordenada DESCENDENTE al cargar
-});
 
 async function cargarTickets() {
   try {
@@ -252,14 +362,13 @@ async function cargarListasReferencia() {
   try {
     estados.value = await obtenerEstados();
     prioridades.value = await obtenerPrioridades();
-    empresa.value = await obtenerEmpresas();
-
-    // ✅ ¡Cargando los técnicos directamente con la función obtenerTecnicos!
-    // Esta función ya devuelve los datos con 'nombreCompleto'
+    empresas.value = await obtenerEmpresas();
     usuariosAsignados.value = await obtenerTecnicos();
-
     categorias.value = await obtenerCategorias();
     servicios.value = await obtenerServicios();
+    console.log('Estados cargados:', estados.value);
+    console.log('Prioridades cargadas:', prioridades.value);
+    console.log('Empresas cargadas:', empresas.value);
   } catch (error: any) {
     console.error('Error al cargar listas de referencia:', error);
     snackbar.value = { show: true, message: error.message || 'Error al cargar opciones de filtro.', color: 'error' };
@@ -273,7 +382,7 @@ const filteredTickets = computed(() =>
     (t.empresa?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) ||
     (t.prioridad?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) ||
     (t.estado?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) ||
-    (t.usuarioAsignado?.nombre || '').toLowerCase().includes(search.value.toLowerCase()) || // Asumiendo que 'usuarioAsignado' tiene 'nombre'
+    (t.usuarioAsignado?.nombreCompleto || '').toLowerCase().includes(search.value.toLowerCase()) ||
     (t.nombreArchivo || '').toLowerCase().includes(search.value.toLowerCase())
   )
 );
@@ -291,11 +400,10 @@ function handleDeleteTicket(id: number) {
 function handleCancelAction() {
   ticketToDeleteId.value = null;
   currentAction.value = '';
-  // También resetea el estado del formulario si se canceló una edición/creación
-  resetForm();
+  resetFormAndState();
 }
 
-// Funciones para manejar el archivo
+// Functions to handle file attachment
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
 function triggerFileInput() {
@@ -303,6 +411,7 @@ function triggerFileInput() {
 }
 
 function handleFileChange(event: Event) {
+  archivoAdjuntoError.value = '';
   const target = event.target as HTMLInputElement;
   if (target.files && target.files.length > 0) {
     const file = target.files[0];
@@ -310,21 +419,25 @@ function handleFileChange(event: Event) {
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
 
     if (fileExtension && allowedExtensions.includes(fileExtension)) {
-      if (file.size <= 5 * 1024 * 1024) { // 5 MB en bytes
+      if (file.size <= 5 * 1024 * 1024) { // 5 MB in bytes
         archivoAdjunto.value = file;
         fileNameDisplay.value = archivoAdjunto.value.name;
-        clearExistingAttachment.value = false; // Si se sube un nuevo archivo, no borrar el existente
+        clearExistingAttachment.value = false;
+        archivoAdjuntoError.value = '';
       } else {
         snackbar.value = { show: true, message: 'El archivo es demasiado grande (máx. 5MB).', color: 'warning' };
+        archivoAdjuntoError.value = 'El archivo es demasiado grande (máx. 5MB).';
         clearSelectedFile();
       }
     } else {
       snackbar.value = { show: true, message: 'Tipo de archivo no permitido. Solo se aceptan imágenes, PDF, y documentos de Office.', color: 'warning' };
+      archivoAdjuntoError.value = 'Tipo de archivo no permitido.';
       clearSelectedFile();
     }
   } else {
     archivoAdjunto.value = null;
     fileNameDisplay.value = '';
+    archivoAdjuntoError.value = '';
   }
 }
 
@@ -332,19 +445,17 @@ function clearSelectedFile() {
   archivoAdjunto.value = null;
   fileNameDisplay.value = '';
   if (fileInputRef.value) {
-    fileInputRef.value.value = ''; // Esto limpia el input de tipo file
+    fileInputRef.value.value = '';
   }
+  archivoAdjuntoError.value = '';
 }
 
-// Función para eliminar el adjunto existente
 function removeExistingAttachment() {
   existingFileName.value = null;
-  clearExistingAttachment.value = true; // Establecer la bandera para enviar al backend
-  // Si se había seleccionado un nuevo archivo para reemplazarlo, se limpia también
+  clearExistingAttachment.value = true;
   clearSelectedFile();
 }
 
-// Función para descargar el adjunto
 async function downloadAttachment(ticketId: number) {
   try {
     await downloadTicketAttachment(ticketId);
@@ -353,6 +464,16 @@ async function downloadAttachment(ticketId: number) {
   }
 }
 
+// --- Lifecycle Hooks ---
+onMounted(async () => {
+  await cargarTickets();
+  await cargarListasReferencia();
+  sortByIdDesc();
+
+  watch(errors, (newErrors) => {
+    console.log('VeeValidate errors updated:', newErrors);
+  }, { deep: true });
+});
 </script>
 
 <template>
@@ -362,16 +483,39 @@ async function downloadAttachment(ticketId: number) {
         FORMULARIO DE TICKET
       </v-card-title>
       <v-card-text>
-        <v-form @submit.prevent="submit" class="form" style="color: black">
+        <v-form @submit.prevent="onSubmit" class="form" style="color: black">
           <v-row class="mb-2">
             <v-col cols="12">
-              <v-text-field label="Título del Ticket" v-model="titulo" required outlined density="compact" />
+              <v-text-field
+                label="Título del Ticket"
+                v-model="titulo"
+                :error-messages="tituloError"
+                :error="!!tituloError"
+                outlined
+                density="compact"
+                counter="100"
+                maxlength="100"
+                hide-details="auto"
+                @blur="handleTituloBlur"
+              />
             </v-col>
           </v-row>
 
           <v-row class="mb-4">
             <v-col cols="12">
-              <v-textarea label="Descripción Detallada del Problema/Solicitud" v-model="descripcion" required outlined rows="5" density="compact" />
+              <v-textarea
+                label="Descripción Detallada del Problema/Solicitud"
+                v-model="descripcion"
+                :error-messages="descripcionError"
+                :error="!!descripcionError"
+                outlined
+                rows="5"
+                density="compact"
+                counter="1000"
+                maxlength="1000"
+                hide-details="auto"
+                @blur="handleDescripcionBlur"
+              />
             </v-col>
           </v-row>
 
@@ -383,67 +527,87 @@ async function downloadAttachment(ticketId: number) {
                 :items="estados"
                 item-title="nombre"
                 item-value="id"
+                :error-messages="estadoIdError"
+                :error="!!estadoIdError"
                 required
                 outlined
                 density="compact"
                 class="mb-3"
-              ></v-select>
+                hide-details="auto"
+              />
               <v-select
                 label="Prioridad del Ticket"
                 v-model="prioridad_id"
                 :items="prioridades"
                 item-title="nombre"
                 item-value="id"
+                :error-messages="prioridadIdError"
+                :error="!!prioridadIdError"
                 required
                 outlined
                 density="compact"
                 class="mb-3"
-              ></v-select>
+                hide-details="auto"
+              />
               <v-select
                 label="Empresa Asociada"
                 v-model="empresa_id"
-                :items="empresa"
+                :items="empresas"
                 item-title="nombre"
                 item-value="id"
+                :error-messages="empresaIdError"
+                :error="!!empresaIdError"
                 required
                 outlined
                 density="compact"
                 class="mb-3"
-              ></v-select>
+                hide-details="auto"
+              />
             </v-col>
 
             <v-col cols="12" md="6">
               <v-select
                 label="Asignado a (Técnico)"
                 v-model="usuario_asignado_id"
-                :items="usuariosAsignados"     item-title="nombreCompleto"    item-value="id"
+                :items="usuariosAsignados"
+                item-title="nombreCompleto"
+                item-value="id"
+                :error-messages="usuarioAsignadoIdError"
+                :error="!!usuarioAsignadoIdError"
+                required
                 outlined
-                clearable
                 density="compact"
                 class="mb-3"
-              ></v-select>
+                hide-details="auto"
+              />
               <v-select
                 label="Categoría de Servicio"
                 v-model="categoria_id"
                 :items="categorias"
                 item-title="nombre"
                 item-value="id"
+                :error-messages="categoriaIdError"
+                :error="!!categoriaIdError"
+                required
                 outlined
-                clearable
                 density="compact"
                 class="mb-3"
-              ></v-select>
+                hide-details="auto"
+              />
               <v-select
                 label="Servicio Específico"
                 v-model="servicio_id"
                 :items="servicios"
                 item-title="nombre"
                 item-value="id"
+                :error-messages="servicioIdError"
+                :error="!!servicioIdError"
+                required
                 outlined
-                clearable
                 density="compact"
                 class="mb-3"
-              ></v-select>
+                hide-details="auto"
+              />
             </v-col>
           </v-row>
 
@@ -496,13 +660,13 @@ async function downloadAttachment(ticketId: number) {
                 <p v-if="isEditing && existingFileName && !fileNameDisplay" class="text-caption ml-2 mb-2">
                   <a @click="downloadAttachment(editingTicketId!)" style="cursor: pointer; text-decoration: underline;">Descargar existente</a>
                 </p>
-
               </div>
+              <v-messages :value="[archivoAdjuntoError]" color="error"></v-messages>
             </v-col>
           </v-row>
 
           <div class="d-flex justify-start mt-4">
-            <v-btn color="grey" text @click="resetForm" class="mr-2">
+            <v-btn color="grey" text @click="resetFormAndState" class="mr-2">
               {{ isEditing ? 'Cancelar Edición' : 'Limpiar' }}
             </v-btn>
             <v-btn color="primary" type="submit">
@@ -571,7 +735,7 @@ async function downloadAttachment(ticketId: number) {
       </v-data-table>
     </v-card>
 
-    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="5000">
       {{ snackbar.message }}
       <template #actions>
         <v-btn text @click="snackbar.show = false">Cerrar</v-btn>
