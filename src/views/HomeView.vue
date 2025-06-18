@@ -1,13 +1,9 @@
 <template>
   <v-app>
-    <!-- Sección principal -->
     <v-main class="hero">
       <div class="hero-header">
         <img src="/logo.png" alt="Logo" class="logo" />
-        <v-btn icon @click="toggleDarkMode" class="ml-auto" variant="text">
-          <v-icon>{{ isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
-        </v-btn>
-      </div>
+        </div>
 
       <v-container
         class="text-center fill-height d-flex flex-column justify-center align-center pt-12"
@@ -31,9 +27,7 @@
       </v-container>
     </v-main>
 
-    <!-- Sección de características -->
-    <v-container class="my-16 feature-section" :class="{ dark: isDark }">
-      <v-row justify="center" align="center" class="text-center">
+    <v-container class="my-16 feature-section"> <v-row justify="center" align="center" class="text-center">
         <v-col
           cols="12"
           md="4"
@@ -51,22 +45,17 @@
       </v-row>
     </v-container>
 
-    <!-- Testimonios -->
-    <v-container class="my-16 testimonial-section" :class="{ dark: isDark }">
-      <h2 class="text-center text-h5 font-weight-bold mb-6">Lo que dicen nuestros usuarios</h2>
+    <v-container class="my-16 testimonial-section"> <h2 class="text-center text-h5 font-weight-bold mb-6">Lo que dicen nuestros usuarios</h2>
       <v-row justify="center" align="stretch" class="testimonials-row">
         <v-col cols="12" md="4" v-for="(testimony, i) in testimonials" :key="i">
-          <v-card class="pa-6 testimonial-card elevation-8" :class="{ dark: isDark }">
-            <p class="testimonial-text">"{{ testimony.text }}"</p>
+          <v-card class="pa-6 testimonial-card elevation-8"> <p class="testimonial-text">"{{ testimony.text }}"</p>
             <p class="text-subtitle-2 font-weight-medium mt-5 testimonial-author">— {{ testimony.author }}</p>
           </v-card>
         </v-col>
       </v-row>
     </v-container>
 
-    <!-- Footer -->
-    <v-footer color="grey-lighten-4" class="text-center py-6" :class="{ dark: isDark }">
-      <v-container>
+    <v-footer color="grey-lighten-4" class="text-center py-6"> <v-container>
         <div class="d-flex justify-center flex-wrap mb-4 footer-links">
           <v-btn variant="text" size="small" class="mx-3 footer-link">Contacto</v-btn>
           <v-btn variant="text" size="small" class="mx-3 footer-link">Términos</v-btn>
@@ -81,9 +70,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from 'vue' // 'computed' ya no es estrictamente necesario para el modo oscuro, pero se puede mantener si se usa para otras cosas
 import { useRouter } from 'vue-router'
-import { useTheme } from 'vuetify'
+// import { useTheme } from 'vuetify' // Eliminada la importación de useTheme
 
 const router = useRouter()
 
@@ -116,11 +105,47 @@ const testimonials = [
   },
 ]
 
-const theme = useTheme()
-const toggleDarkMode = () => {
-  theme.global.name.value = theme.global.current.value.dark ? 'light' : 'dark'
-}
-const isDark = computed(() => theme.global.current.value.dark)
+// Eliminada la lógica del tema oscuro
+// const theme = useTheme()
+// const toggleDarkMode = () => {
+//   theme.global.name.value = theme.global.current.value.dark ? 'light' : 'dark'
+// }
+// const isDark = computed(() => theme.global.current.value.dark)
+
+// Si usas Vuetify 3, asegúrate de configurar el tema global 'light' en tu `main.ts` o donde inicialices Vuetify.
+// Por ejemplo, en `main.ts`:
+/*
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './router'
+import 'vuetify/styles'
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+
+const vuetify = createVuetify({
+  components,
+  directives,
+  theme: {
+    defaultTheme: 'light', // <--- Asegura que el tema por defecto sea 'light'
+    themes: {
+      light: {
+        colors: {
+          primary: '#1867C0', // Tus colores primarios para el tema claro
+          secondary: '#5CBBF6',
+          // etc.
+        },
+      },
+      // No defines el tema 'dark' si no lo vas a usar
+    },
+  },
+})
+
+createApp(App)
+  .use(router)
+  .use(vuetify)
+  .mount('#app')
+*/
 </script>
 
 <style scoped>
@@ -190,10 +215,9 @@ body {
 /* Características */
 .feature-section {
   transition: background-color 0.3s ease, color 0.3s ease;
+  /* Eliminada la regla .feature-section.dark */
 }
-.feature-section.dark {
-  background-color: #121212;
-}
+
 .feature-col {
   margin-bottom: 3rem;
   transition: transform 0.3s ease, opacity 0.3s ease;
@@ -208,40 +232,31 @@ body {
 .feature-title {
   margin-top: 1rem;
   font-weight: 700;
-  color: #0d47a1;
+  color: #0d47a1; /* Color fijo para tema claro */
 }
-.feature-section.dark .feature-title {
-  color: #90caf9;
-}
+/* Eliminada la regla .feature-section.dark .feature-title */
 .feature-desc {
   margin-top: 0.5rem;
-  color: #333;
+  color: #333; /* Color fijo para tema claro */
   font-size: 1rem;
 }
-.feature-section.dark .feature-desc {
-  color: #ddd;
-}
+/* Eliminada la regla .feature-section.dark .feature-desc */
 
 /* Testimonios */
 .testimonial-section {
   transition: background-color 0.3s ease;
-}
-.testimonial-section.dark {
-  background-color: #1e1e1e;
+  /* Eliminada la regla .testimonial-section.dark */
 }
 .testimonials-row {
   gap: 24px;
 }
 .testimonial-card {
   border-radius: 12px;
-  background: linear-gradient(145deg, #e3f2fd, #bbdefb);
-  color: #0d47a1;
+  background: linear-gradient(145deg, #e3f2fd, #bbdefb); /* Fondo fijo para tema claro */
+  color: #0d47a1; /* Color de texto fijo para tema claro */
   transition: box-shadow 0.3s ease;
 }
-.testimonial-card.dark {
-  background: #2c2c2c;
-  color: #fff;
-}
+/* Eliminada la regla .testimonial-card.dark */
 .testimonial-card:hover {
   box-shadow: 0 16px 30px rgba(33, 150, 243, 0.4);
 }
@@ -254,17 +269,16 @@ body {
   font-weight: 600;
   text-align: right;
   margin-top: 1.5rem;
-  color: #0b3d91;
+  color: #0b3d91; /* Color fijo para tema claro */
 }
-.testimonial-section.dark .testimonial-author {
-  color: #90caf9;
-}
+/* Eliminada la regla .testimonial-section.dark .testimonial-author */
 
 /* Footer */
-.v-footer.dark {
-  background-color: #121212 !important;
-  color: white !important;
+.v-footer { /* Eliminada la clase .dark y su color condicional */
+  background-color: #f5f5f5 !important; /* Un gris muy claro para el footer si no es dark */
+  color: #333 !important; /* Color de texto para el footer */
 }
+/* Eliminada la regla .v-footer.dark */
 .footer-links .footer-link {
   color: #1565c0 !important;
   transition: color 0.3s ease;
