@@ -26,35 +26,6 @@
       />
 
       <v-list-group
-        prepend-icon="mdi-cog"
-        title="Configuración"
-        no-action
-      >
-        <template #activator="{ props }">
-          <v-list-item v-bind="props" title="Configuración" />
-        </template>
-
-        <v-list-item
-          prepend-icon="mdi-account"
-          title="Perfil"
-          :to="{ path: '/profile' }"
-          link
-        />
-        <v-list-item
-          prepend-icon="mdi-account-cog"
-          title="Roles"
-          :to="{ path: '/roles-crud' }"
-          link
-        />
-        <v-list-item
-          prepend-icon="mdi-shield-account"
-          title="Permisos"
-          :to="{ path: '/permisos' }"
-          link
-        />
-      </v-list-group>
-
-      <v-list-group
         prepend-icon="mdi-ticket"
         title="Tickets"
         no-action
@@ -101,6 +72,35 @@
         :to="{ path: '/Notificaciones' }"
         link
       />
+
+      <v-list-group
+        prepend-icon="mdi-cog"
+        title="Configuración"
+        no-action
+      >
+        <template #activator="{ props }">
+          <v-list-item v-bind="props" title="Configuración" />
+        </template>
+
+        <v-list-item
+          prepend-icon="mdi-account"
+          title="Perfil"
+          :to="{ path: '/profile' }"
+          link
+        />
+        <v-list-item
+          prepend-icon="mdi-account-cog"
+          title="Roles"
+          :to="{ path: '/roles-crud' }"
+          link
+        />
+        <v-list-item
+          prepend-icon="mdi-shield-account"
+          title="Permisos"
+          :to="{ path: '/permisos' }"
+          link
+        />
+      </v-list-group>
     </v-list>
   </v-navigation-drawer>
 </template>
