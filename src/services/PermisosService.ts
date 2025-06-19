@@ -137,7 +137,7 @@ const PermisosService = {
   },
 
   async asignarPermisosRolItem(
-    data: { roleId: number; itemId: number; permisosIds: number[] }
+    data: { rolId: number; itemId: number; permisosIds: number[] }
   ): Promise<{ success: boolean; message?: string }> {
     try {
       const response = await fetch(`${API_BASE_URL}/asignaciones`, {

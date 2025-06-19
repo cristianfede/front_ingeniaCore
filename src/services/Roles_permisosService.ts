@@ -117,7 +117,7 @@ const RolesPermisosService = {
         }
     },
 
-    async createAsignacion(data: CreateAsignacionData): Promise<any> {
+    async createAsignacion(data: CreateAsignacionData): Promise<{ success: boolean; message: string; data?: AsignacionPermiso }> {
         try {
             // CORREGIDO: Añadir /permisos-gestion/
             const response = await axios.post(`${API_URL}/permisos-gestion/asignaciones`, data);
@@ -128,7 +128,7 @@ const RolesPermisosService = {
         }
     },
 
-    async deleteAsignacion(rolId: number, permisoId: number, itemId: number | 'null'): Promise<any> {
+    async deleteAsignacion(rolId: number, permisoId: number, itemId: number | 'null'): Promise<number> {
         try {
             // CORREGIDO: Añadir /permisos-gestion/
             const response = await axios.delete(`${API_URL}/permisos-gestion/asignaciones/${rolId}/${permisoId}/${itemId}`);

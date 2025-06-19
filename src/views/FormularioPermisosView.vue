@@ -19,7 +19,7 @@
                 required
                 :loading="cargandoRoles"
                 :readonly="isEditing"
-                :rules="[v => !!v || 'Rol es requerido']"
+                :rules="[(v) => !!v || 'Rol es requerido']"
               />
             </v-col>
 
@@ -35,7 +35,7 @@
                 required
                 :loading="cargandoItems"
                 :readonly="isEditing"
-                :rules="[v => !!v || 'Ítem es requerido']"
+                :rules="[(v) => !!v || 'Ítem es requerido']"
               />
             </v-col>
 
@@ -54,7 +54,7 @@
                 clearable
                 required
                 :loading="cargandoPermisos"
-                :rules="[v => (v && v.length > 0) || 'Permisos son requeridos']"
+                :rules="[(v) => (v && v.length > 0) || 'Permisos son requeridos']"
               />
             </v-col>
           </v-row>
@@ -80,7 +80,14 @@
 
       <v-row align="center" class="px-4 pb-4">
         <v-col cols="12" sm="6" md="5" lg="4">
-          <v-text-field v-model="search" label="Buscar permiso" prepend-inner-icon="mdi-magnify" outlined dense hide-details />
+          <v-text-field
+            v-model="search"
+            label="Buscar permiso"
+            prepend-inner-icon="mdi-magnify"
+            outlined
+            dense
+            hide-details
+          />
         </v-col>
 
         <v-col cols="12" sm="6" md="7" lg="8" class="d-flex justify-start">
@@ -105,22 +112,19 @@
         no-data-text="No hay asignaciones"
         class="elevation-1"
       >
-        <template v-slot:item.id="{ item }">
-          <!-- Muestra solo el ID del rol en la columna 'ID' -->
-          {{ item.rol.id }}
-        </template>
+
         <template v-slot:[`item.permisosAgrupados`]="{ item }">
           <div v-if="item.permisosAgrupados && item.permisosAgrupados.length > 0">
-            {{ item.permisosAgrupados.map(permiso => permiso.nombre).join(', ') }}
+            {{ item.permisosAgrupados.map((permiso) => permiso.nombre).join(', ') }}
           </div>
-          <div v-else>
-            N/A
-          </div>
+          <div v-else>N/A</div>
         </template>
-
+        <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template v-slot:item.actions="{ item }">
           <v-btn icon class="mr-2" @click="editAssignment(item)">
-            <v-icon :color="selectedAssignmentId === item.id ? 'primary' : 'blue'">mdi-pencil</v-icon>
+            <v-icon :color="selectedAssignmentId === item.id ? 'primary' : 'blue'"
+              >mdi-pencil</v-icon
+            >
           </v-btn>
           <v-btn icon @click="eliminarAsignacion(item)">
             <v-icon color="red">mdi-delete</v-icon>
@@ -129,20 +133,10 @@
       </v-data-table>
     </v-card>
 
-    <v-snackbar
-      v-model="snackbar.show"
-      :color="snackbar.color"
-      :timeout="snackbar.timeout"
-    >
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="snackbar.timeout">
       {{ snackbar.message }}
       <template v-slot:actions>
-        <v-btn
-          color="white"
-          variant="text"
-          @click="snackbar.show = false"
-        >
-          Cerrar
-        </v-btn>
+        <v-btn color="white" variant="text" @click="snackbar.show = false"> Cerrar </v-btn>
       </template>
     </v-snackbar>
 
@@ -150,20 +144,28 @@
       <v-card>
         <v-card-title class="headline">Confirmar Acción</v-card-title>
         <v-card-text>
-          ¿Está seguro de que desea {{ dialogAction === 'update' ? 'actualizar' : dialogAction === 'delete' ? 'eliminar' : 'asignar' }} los permisos para el Rol:
-          {{ itemToConfirm?.rol?.nombre || 'N/A' }} e Ítem: {{ itemToConfirm?.item?.nombre || 'N/A' }}?
+          ¿Está seguro de que desea
+          {{
+            dialogAction === 'update'
+              ? 'actualizar'
+              : dialogAction === 'delete'
+                ? 'eliminar'
+                : 'asignar'
+          }}
+          los permisos para el Rol: {{ itemToConfirm?.rol?.nombre || 'N/A' }} e Ítem:
+          {{ itemToConfirm?.item?.nombre || 'N/A' }}?
 
           <template v-if="dialogAction === 'update' || dialogAction === 'assign'">
-              <div class="mt-4">Permisos a Guardar:</div>
-              <v-chip
-                v-for="permisoId in permisosSeleccionados"
-                :key="permisoId"
-                class="ma-1"
-                :color="dialogAction === 'update' ? 'black-lighten-4' : 'black-lighten-4'"
-                density="comfortable"
-              >
-                {{ getPermisoNombreById(permisoId) }}
-              </v-chip>
+            <div class="mt-4">Permisos a Guardar:</div>
+            <v-chip
+              v-for="permisoId in permisosSeleccionados"
+              :key="permisoId"
+              class="ma-1"
+              :color="dialogAction === 'update' ? 'black-lighten-4' : 'black-lighten-4'"
+              density="comfortable"
+            >
+              {{ getPermisoNombreById(permisoId) }}
+            </v-chip>
           </template>
         </v-card-text>
         <v-card-actions>
@@ -178,145 +180,161 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, toRaw} from 'vue';
-import PermisosService, { type Rol, type Item, type Permiso, type Asignacion } from '@/services/PermisosService';
+import { ref, onMounted, computed, watch, toRaw } from 'vue'
+import type { Ref } from 'vue'
+import PermisosService, {
+  type Rol,
+  type Item,
+  type Permiso,
+  type Asignacion,
+} from '@/services/PermisosService'
 
 // Variables reactivas
-const rolSeleccionado = ref<number | null>(null);
-const itemSeleccionado = ref<number | null>(null);
-const permisosSeleccionados = ref<number[]>([]);
+const rolSeleccionado = ref<number | null>(null)
+const itemSeleccionado = ref<number | null>(null)
+const permisosSeleccionados = ref<number[]>([])
 
-const roles = ref<Rol[]>([]);
-const items = ref<Item[]>([]);
-const permisos = ref<Permiso[]>([]);
-const asignaciones = ref<Asignacion[]>([]);
+const roles = ref<Rol[]>([])
+const items = ref<Item[]>([])
+const permisos = ref<Permiso[]>([])
+const asignaciones = ref<Asignacion[]>([])
 
-const cargandoRoles = ref(false);
-const cargandoItems = ref(false);
-const cargandoPermisos = ref(false);
-const cargandoAsignaciones = ref(false);
-const enviandoFormulario = ref(false);
+const cargandoRoles = ref(false)
+const cargandoItems = ref(false)
+const cargandoPermisos = ref(false)
+const cargandoAsignaciones = ref(false)
+const enviandoFormulario = ref(false)
 
-const isEditing = ref(false);
-const selectedAssignmentId = ref<string | null>(null);
+const isEditing = ref(false)
+const selectedAssignmentId = ref<string | null>(null)
 
-const showConfirmDialog = ref(false);
-const itemToConfirm = ref<any>(null);
-const dialogAction = ref<'update' | 'delete' | 'assign' | ''>('');
-const formularioAsignacion = ref<any>(null);
+const showConfirmDialog = ref(false)
+const itemToConfirm = ref<{ rol: Rol | null; item: Item | null; permisosIds?: number[] } | null>(
+  null,
+)
+const dialogAction = ref<'update' | 'delete' | 'assign' | ''>('')
+import { VForm } from 'vuetify/components'
+
+const formularioAsignacion = ref<InstanceType<typeof VForm> | null>(null) as Ref<InstanceType<typeof VForm> | null>;
 
 // Tipo para sortBy, consistente con Vuetify v-data-table
 type MySortItem = {
-  key: string;
-  order: boolean | 'asc' | 'desc' | undefined;
-};
+  key: string
+  order: boolean | 'asc' | 'desc' | undefined
+}
 
 // Ordenación por defecto para la tabla (se controla por los botones del template)
-const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }]);
-
+const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }])
 
 const filteredAsignaciones = computed(() => {
-  const searchTerm = search.value.trim().toLowerCase();
-  let filtered = groupedAssignments.value.filter((item) => {
+  const searchTerm = search.value.trim().toLowerCase()
+  const filtered = groupedAssignments.value.filter((item) => {
     return (
       item.rolNombre.toLowerCase().includes(searchTerm) ||
       item.itemNombre.toLowerCase().includes(searchTerm) ||
-      item.permisosAgrupados.some((permiso) =>
-        permiso.nombre.toLowerCase().includes(searchTerm)
-      )
-    );
-  });
+      item.permisosAgrupados.some((permiso) => permiso.nombre.toLowerCase().includes(searchTerm))
+    )
+  })
 
   // Aplicar el ordenamiento
   if (sortBy.value && sortBy.value.length > 0) {
-    const sortKey = sortBy.value[0].key;
-    const sortOrder = sortBy.value[0].order;
+    const sortKey = sortBy.value[0].key
+    const sortOrder = sortBy.value[0].order
 
     filtered.sort((a, b) => {
-      let valA: any;
-      let valB: any;
+      let valA: string | number | null | undefined
+      let valB: string | number | null | undefined
 
       if (sortKey === 'rolNombre') {
-        valA = a.rolNombre;
-        valB = b.rolNombre;
+        valA = a.rolNombre
+        valB = b.rolNombre
       } else if (sortKey === 'itemNombre') {
-        valA = a.itemNombre;
-        valB = b.itemNombre;
+        valA = a.itemNombre
+        valB = b.itemNombre
       } else if (sortKey === 'id') {
         // Para ordenar por la parte numérica del ID compuesto (rolId-itemId)
-        valA = parseInt(a.id.split('-')[0]);
-        valB = parseInt(b.id.split('-')[0]);
+        valA = parseInt(a.id.split('-')[0])
+        valB = parseInt(b.id.split('-')[0])
         if (valA === valB) {
-            valA = parseInt(a.id.split('-')[1]);
-            valB = parseInt(b.id.split('-')[1]);
+          valA = parseInt(a.id.split('-')[1])
+          valB = parseInt(b.id.split('-')[1])
         }
       } else {
         // Fallback para otras claves si fuera necesario
-        valA = (a as any)[sortKey];
-        valB = (b as any)[sortKey];
+        valA = (a as unknown as { [key: string]: string | number | null | undefined })[sortKey]
+        valB = (b as unknown as { [key: string]: string | number | null | undefined })[sortKey]
       }
 
-      if (valA === null || valA === undefined) valA = '';
-      if (valB === null || valB === undefined) valB = '';
+      if (valA === null || valA === undefined) valA = ''
+      if (valB === null || valB === undefined) valB = ''
 
       if (typeof valA === 'string' && typeof valB === 'string') {
-        return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA)
       } else {
-        return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
+        return sortOrder === 'asc' ? Number(valA) - Number(valB) : Number(valB) - Number(valA)
       }
-    });
+    })
   }
 
-  return filtered;
-});
-
+  return filtered
+})
 
 const sortByIdAsc = () => {
-    sortBy.value = [{ key: 'id', order: 'asc' }];
-};
+  sortBy.value = [{ key: 'id', order: 'asc' }]
+}
 
 const sortByIdDesc = () => {
-    sortBy.value = [{ key: 'id', order: 'desc' }];
-};
+  sortBy.value = [{ key: 'id', order: 'desc' }]
+}
 
-const search = ref('');
+const search = ref('')
 
 const snackbar = ref({
   show: false,
   message: '',
   color: '',
   timeout: 3000,
-});
-
+})
 
 const headersAsignaciones = [
   { title: 'ID', key: 'id', sortable: false }, // Agregado y con sortable: false
   { title: 'Rol', key: 'rolNombre', sortable: false }, // CAMBIO: sortable: false
   { title: 'Ítem', key: 'itemNombre', sortable: false }, // CAMBIO: sortable: false
-  { title: 'Permiso', key: 'permisosAgrupados', sortable: false},
-  { title: 'Acciones', key: 'actions', sortable: false }
-];
+  { title: 'Permiso', key: 'permisosAgrupados', sortable: false },
+  { title: 'Acciones', key: 'actions', sortable: false },
+]
 
 const groupedAssignments = computed(() => {
-  const groups = new Map<string, {
-    id: string; // 'rolId-itemId'
-    rol: Rol;
-    item: Item;
-    rolNombre: string;
-    itemNombre: string;
-    permisosAgrupados: Permiso[];
-    originalAsignacionesIds: number[];
-  }>();
-
-  asignaciones.value.forEach(asignacion => {
-    // Asegúrate de que las propiedades anidadas existen
-    if (!asignacion.rol || !asignacion.rol.id || !asignacion.rol.nombre ||
-        !asignacion.item || !asignacion.item.id || !asignacion.item.nombre ||
-        !asignacion.permiso || !asignacion.permiso.id || !asignacion.permiso.nombre) {
-        console.warn('Asignación con datos incompletos omitida:', asignacion);
-        return; // Omitir asignaciones malformadas
+  const groups = new Map<
+    string,
+    {
+      id: string // 'rolId-itemId'
+      rol: Rol
+      item: Item
+      rolNombre: string
+      itemNombre: string
+      permisosAgrupados: Permiso[]
+      originalAsignacionesIds: number[]
     }
-    const key = `${asignacion.rol.id}-${asignacion.item.id}`;
+  >()
+
+  asignaciones.value.forEach((asignacion) => {
+    // Asegúrate de que las propiedades anidadas existen
+    if (
+      !asignacion.rol ||
+      !asignacion.rol.id ||
+      !asignacion.rol.nombre ||
+      !asignacion.item ||
+      !asignacion.item.id ||
+      !asignacion.item.nombre ||
+      !asignacion.permiso ||
+      !asignacion.permiso.id ||
+      !asignacion.permiso.nombre
+    ) {
+      console.warn('Asignación con datos incompletos omitida:', asignacion)
+      return // Omitir asignaciones malformadas
+    }
+    const key = `${asignacion.rol.id}-${asignacion.item.id}`
 
     if (!groups.has(key)) {
       groups.set(key, {
@@ -327,27 +345,27 @@ const groupedAssignments = computed(() => {
         itemNombre: asignacion.item.nombre,
         permisosAgrupados: [],
         originalAsignacionesIds: [],
-      });
+      })
     }
-    const group = groups.get(key)!;
+    const group = groups.get(key)!
 
-    if (!group.permisosAgrupados.some(p => p.id === asignacion.permiso.id)) {
-        group.permisosAgrupados.push(asignacion.permiso);
+    if (!group.permisosAgrupados.some((p) => p.id === asignacion.permiso.id)) {
+      group.permisosAgrupados.push(asignacion.permiso)
     }
-    group.originalAsignacionesIds.push(asignacion.id);
-  });
+    group.originalAsignacionesIds.push(asignacion.id)
+  })
 
-  const result = Array.from(groups.values()).map(group => ({
+  const result = Array.from(groups.values()).map((group) => ({
     ...group,
     permisosAgrupados: group.permisosAgrupados.sort((a, b) => a.nombre.localeCompare(b.nombre)),
-  }));
-  return result;
-});
+  }))
+  return result
+})
 
 const getPermisoNombreById = (id: number) => {
-  const permiso = permisos.value.find(p => p.id === id);
-  return permiso ? permiso.nombre : `ID: ${id}`;
-};
+  const permiso = permisos.value.find((p) => p.id === id)
+  return permiso ? permiso.nombre : `ID: ${id}`
+}
 
 onMounted(async () => {
   await Promise.all([
@@ -355,169 +373,238 @@ onMounted(async () => {
     cargarItems(),
     cargarPermisos(),
     cargarAsignaciones(),
-    sortByIdAsc()
-  ]);
-});
+    sortByIdAsc(),
+  ])
+})
 
 async function cargarRoles() {
-  cargandoRoles.value = true;
+  cargandoRoles.value = true
   try {
-    roles.value = await PermisosService.obtenerRoles();
-  } catch (error: any) {
-    console.error('Error al cargar roles:', error);
-    snackbar.value = { show: true, message: `Error al cargar roles: ${error.message || 'Error desconocido'}`, color: 'error', timeout: 3000 };
+    roles.value = await PermisosService.obtenerRoles()
+  } catch (error: unknown) {
+    console.error('Error al cargar roles:', error)
+    snackbar.value = {
+      show: true,
+      message: `Error al cargar roles: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+      color: 'error',
+      timeout: 3000,
+    }
   } finally {
-    cargandoRoles.value = false;
+    cargandoRoles.value = false
   }
 }
 
 async function cargarItems() {
-  cargandoItems.value = true;
+  cargandoItems.value = true
   try {
-    items.value = await PermisosService.obtenerItems();
-  } catch (error: any) {
-    console.error('Error al cargar items:', error);
-    snackbar.value = { show: true, message: `Error al cargar ítems: ${error.message || 'Error desconocido'}`, color: 'error', timeout: 3000 };
+    items.value = await PermisosService.obtenerItems()
+  } catch (error: unknown) {
+    console.error('Error al cargar items:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
+    snackbar.value = {
+      show: true,
+      message: `Error al cargar ítems: ${errorMessage}`,
+      color: 'error',
+      timeout: 3000,
+    }
   } finally {
-    cargandoItems.value = false;
+    cargandoItems.value = false
   }
 }
 
 async function cargarPermisos() {
-  cargandoPermisos.value = true;
+  cargandoPermisos.value = true
   try {
-    permisos.value = await PermisosService.obtenerPermisos();
-  } catch (error: any) {
-    console.error('Error al cargar permisos:', error);
-    snackbar.value = { show: true, message: `Error al cargar permisos: ${error.message || 'Error desconocido'}`, color: 'error', timeout: 3000 };
+    permisos.value = await PermisosService.obtenerPermisos()
+  } catch (error: unknown) {
+    console.error('Error al cargar permisos:', error)
+    snackbar.value = {
+      show: true,
+      message: `Error al cargar permisos: ${
+        error instanceof Error ? error.message : 'Error desconocido'
+      }`,
+      color: 'error',
+      timeout: 3000,
+    }
   } finally {
-    cargandoPermisos.value = false;
+    cargandoPermisos.value = false
   }
 }
 
 async function cargarAsignaciones() {
-  cargandoAsignaciones.value = true;
+  cargandoAsignaciones.value = true
   try {
-    asignaciones.value = await PermisosService.obtenerAsignaciones();
-  } catch (error: any) {
-    console.error('Error al cargar asignaciones:', error);
-    snackbar.value = { show: true, message: `Error al cargar asignaciones: ${error.message || 'Error desconocido'}`, color: 'error', timeout: 3000 };
+    asignaciones.value = await PermisosService.obtenerAsignaciones()
+  } catch (error: unknown) {
+    console.error('Error al cargar asignaciones:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
+    snackbar.value = {
+      show: true,
+      message: `Error al cargar asignaciones: ${errorMessage}`,
+      color: 'error',
+      timeout: 3000,
+    }
   } finally {
-    cargandoAsignaciones.value = false;
+    cargandoAsignaciones.value = false
   }
 }
 
 async function handleSubmit() {
-  const { valid } = await (formularioAsignacion.value as any).validate();
-  if (!valid) {
-    snackbar.value = { show: true, message: 'Por favor, completa todos los campos requeridos.', color: 'warning', timeout: 3000 };
-    return;
+  if (formularioAsignacion.value) {
+    const validationResult = await formularioAsignacion.value.validate()
+    if (!validationResult.valid) {
+      snackbar.value = {
+        show: true,
+        message: 'Por favor, completa todos los campos requeridos.',
+        color: 'warning',
+        timeout: 3000,
+      }
+      return
+    }
   }
 
   itemToConfirm.value = {
-    rol: roles.value.find(r => r.id === rolSeleccionado.value),
-    item: items.value.find(i => i.id === itemSeleccionado.value),
+    rol: roles.value.find((r) => r.id === rolSeleccionado.value) ?? null,
+    item: items.value.find((i) => i.id === itemSeleccionado.value) ?? null,
     permisosIds: permisosSeleccionados.value,
-  };
+  }
 
-  dialogAction.value = isEditing.value ? 'update' : 'assign';
-  showConfirmDialog.value = true;
+  dialogAction.value = isEditing.value ? 'update' : 'assign'
+  showConfirmDialog.value = true
 }
 
 async function executeConfirmedAction() {
-    showConfirmDialog.value = false;
-    enviandoFormulario.value = true;
+  showConfirmDialog.value = false
+  enviandoFormulario.value = true
 
-    try {
-        if (dialogAction.value === 'assign') {
-            const dataToAssign = {
-                rolId: rolSeleccionado.value as number,
-                itemId: itemSeleccionado.value as number,
-                permisosIds: [...permisosSeleccionados.value], // Copia para asegurar array plano
-            };
-            await PermisosService.asignarPermisosRolItem(dataToAssign);
-            snackbar.value = { show: true, message: 'Permisos asignados exitosamente!', color: 'success', timeout: 3000 };
-            clearFormAndDeselect();
-            sortByIdDesc();
-
-        } else if (dialogAction.value === 'update') {
-            const dataToUpdate = {
-                rolId: rolSeleccionado.value as number,
-                itemId: itemSeleccionado.value as number,
-                permisosIds: [...permisosSeleccionados.value], // Copia para asegurar array plano
-            };
-            await PermisosService.actualizarPermisosRolItem(dataToUpdate);
-            snackbar.value = { show: true, message: 'Permisos actualizados exitosamente!', color: 'success', timeout: 3000 };
-            clearFormAndDeselect();
-            sortByIdAsc();
-
-        } else if (dialogAction.value === 'delete') {
-            // La eliminación no envía permisosIds, así que no necesita el cambio
-            await PermisosService.eliminarAsignacionesPorRolItem(
-                itemToConfirm.value.rol.id,
-                itemToConfirm.value.item.id
-            );
-            snackbar.value = { show: true, message: 'Asignación eliminada exitosamente!', color: 'info', timeout: 3000 };
-            clearFormAndDeselect();
-            sortByIdAsc();
-        }
-
-        await cargarAsignaciones();
-
-    } catch (err: any) {
-        console.error("Error en la operación:", err);
-        snackbar.value = { show: true, message: `Error: ${err.message || 'Ocurrió un error inesperado.'}`, color: 'error', timeout: 5000 };
-    } finally {
-        enviandoFormulario.value = false;
+  try {
+    if (dialogAction.value === 'assign') {
+      const dataToAssign = {
+        rolId: rolSeleccionado.value as number,
+        itemId: itemSeleccionado.value as number,
+        permisosIds: [...permisosSeleccionados.value], // Copia para asegurar array plano
+      }
+      await PermisosService.asignarPermisosRolItem(dataToAssign)
+      snackbar.value = {
+        show: true,
+        message: 'Permisos asignados exitosamente!',
+        color: 'success',
+        timeout: 3000,
+      }
+      clearFormAndDeselect()
+      sortByIdDesc()
+    } else if (dialogAction.value === 'update') {
+      const dataToUpdate = {
+        rolId: rolSeleccionado.value as number,
+        itemId: itemSeleccionado.value as number,
+        permisosIds: [...permisosSeleccionados.value], // Copia para asegurar array plano
+      }
+      await PermisosService.actualizarPermisosRolItem(dataToUpdate)
+      snackbar.value = {
+        show: true,
+        message: 'Permisos actualizados exitosamente!',
+        color: 'success',
+        timeout: 3000,
+      }
+      clearFormAndDeselect()
+      sortByIdAsc()
+    } else if (dialogAction.value === 'delete') {
+      // La eliminación no envía permisosIds, así que no necesita el cambio
+      await PermisosService.eliminarAsignacionesPorRolItem(
+        itemToConfirm.value && itemToConfirm.value.rol && itemToConfirm.value.rol.id !== null
+          ? itemToConfirm.value.rol.id
+          : 0,
+        itemToConfirm.value?.item?.id ?? 0,
+      )
+      snackbar.value = {
+        show: true,
+        message: 'Asignación eliminada exitosamente!',
+        color: 'info',
+        timeout: 3000,
+      }
+      clearFormAndDeselect()
+      sortByIdAsc()
     }
+
+    await cargarAsignaciones()
+  } catch (err: unknown) {
+    console.error('Error en la operación:', err)
+    const errorMessage = err instanceof Error ? err.message : 'Ocurrió un error inesperado.'
+    snackbar.value = {
+      show: true,
+      message: `Error: ${errorMessage}`,
+      color: 'error',
+      timeout: 5000,
+    }
+  } finally {
+    enviandoFormulario.value = false
+  }
 }
 
-function eliminarAsignacion(item: any) {
-  itemToConfirm.value = item;
-  dialogAction.value = 'delete';
-  showConfirmDialog.value = true;
+function eliminarAsignacion(item: { id: string; rol: Rol; item: Item; permisosAgrupados: Permiso[] }) {
+  itemToConfirm.value = item
+  dialogAction.value = 'delete'
+  showConfirmDialog.value = true
 }
 
-function editAssignment(groupedItem: any) {
+function editAssignment(groupedItem: {
+  id: string;
+  rol: Rol;
+  item: Item;
+  permisosAgrupados: Permiso[];
+}) {
   // Asegúrate de que groupedItem y sus propiedades existen antes de usarlos
-  if (groupedItem &&
-        groupedItem.rol && typeof groupedItem.rol === 'object' && groupedItem.rol.id !== null && groupedItem.rol.id !== undefined &&
-        groupedItem.item && typeof groupedItem.item === 'object' && groupedItem.item.id !== null && groupedItem.item.id !== undefined &&
-        groupedItem.permisosAgrupados && Array.isArray(groupedItem.permisosAgrupados)
-    ) {
-      rolSeleccionado.value = groupedItem.rol.id;
-      itemSeleccionado.value = groupedItem.item.id;
-      permisosSeleccionados.value = groupedItem.permisosAgrupados.map((p: Permiso) => toRaw(p).id);
+  if (
+    groupedItem &&
+    groupedItem.rol &&
+    typeof groupedItem.rol === 'object' &&
+    groupedItem.rol.id !== null &&
+    groupedItem.rol.id !== undefined &&
+    groupedItem.item &&
+    typeof groupedItem.item === 'object' &&
+    groupedItem.item.id !== null &&
+    groupedItem.item.id !== undefined &&
+    groupedItem.permisosAgrupados &&
+    Array.isArray(groupedItem.permisosAgrupados)
+  ) {
+    rolSeleccionado.value = groupedItem.rol.id
+    itemSeleccionado.value = groupedItem.item.id
+    permisosSeleccionados.value = groupedItem.permisosAgrupados.map((p: Permiso) => toRaw(p).id)
 
-    isEditing.value = true;
-    selectedAssignmentId.value = groupedItem.id;
+    isEditing.value = true
+    selectedAssignmentId.value = groupedItem.id
   } else {
-    console.warn('Intento de editar una asignación con datos incompletos:', groupedItem);
-    snackbar.value = { show: true, message: 'No se pudo cargar la asignación para editar. Datos incompletos.', color: 'warning', timeout: 3000 };
-    return;
+    console.warn('Intento de editar una asignación con datos incompletos:', groupedItem)
+    snackbar.value = {
+      show: true,
+      message: 'No se pudo cargar la asignación para editar. Datos incompletos.',
+      color: 'warning',
+      timeout: 3000,
+    }
+    return
   }
 }
 
 function clearFormAndDeselect() {
-  rolSeleccionado.value = null;
-  itemSeleccionado.value = null;
-  permisosSeleccionados.value = [];
-  isEditing.value = false;
-  selectedAssignmentId.value = null;
-  (formularioAsignacion.value as any)?.resetValidation();
+  rolSeleccionado.value = null
+  itemSeleccionado.value = null
+  permisosSeleccionados.value = []
+  isEditing.value = false
+  selectedAssignmentId.value = null
+  formularioAsignacion.value?.resetValidation()
 }
 
 watch(rolSeleccionado, (newVal, oldVal) => {
-    if (!isEditing.value && newVal !== oldVal) {
-        permisosSeleccionados.value = [];
-    }
-});
+  if (!isEditing.value && newVal !== oldVal) {
+    permisosSeleccionados.value = []
+  }
+})
 
 watch(itemSeleccionado, (newVal, oldVal) => {
-    if (!isEditing.value && newVal !== oldVal) {
-        permisosSeleccionados.value = [];
-    }
-});
+  if (!isEditing.value && newVal !== oldVal) {
+    permisosSeleccionados.value = []
+  }
+})
 </script>
 
 <style scoped>
@@ -541,8 +628,9 @@ watch(itemSeleccionado, (newVal, oldVal) => {
 }
 
 /* Estilos para los títulos de las tarjetas */
-.text-h5, .text-h6 {
-  color: #1976D2;
+.text-h5,
+.text-h6 {
+  color: #1976d2;
   font-weight: bold;
 }
 </style>

@@ -42,7 +42,10 @@ export interface DashboardResponse {
 export default class DashboardService {
   static async getDashboardData(): Promise<DashboardResponse> {
     const authStore = authSetStore(); // Obtiene la instancia del store
-    const token = authStore.user.id; // Obtiene el token
+    const token = authStore.user?.id; // Obtiene el token, si user no es null
+    if (!token) {
+      throw new Error('No authentication token found. Please log in.');
+    }
 
     console.log('DashboardService - Token recuperado del AuthStore:', token);
     if (!token) {

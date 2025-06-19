@@ -13,7 +13,7 @@
           </v-col>
           <v-col cols="12" md="6">
             <strong>Estado:</strong>
-            <v-chip :color="getEstadoColor(ticket.estado?.nombre)">
+            <v-chip :color="getEstadoColor(ticket.estado?.nombre || '')">
               {{ ticket.estado?.nombre }}
             </v-chip>
           </v-col>
@@ -26,7 +26,7 @@
             <strong>Fecha de creación:</strong> {{ formatearFecha(ticket.createdAt) }}
           </v-col>
           <v-col cols="12" md="6" v-if="ticket.fechaFinalizacion">
-            <strong>Fecha de finalización:</strong> 
+            <strong>Fecha de finalización:</strong>
             <span style="color: green">
               <v-icon small color="green">mdi-check-circle</v-icon>
               {{ formatearFecha(ticket.fechaFinalizacion) }}
@@ -38,7 +38,7 @@
           </v-col>
           <v-col cols="12" md="6">
             <strong>Prioridad:</strong>
-            <v-chip :color="getPrioridadColor(ticket.prioridad?.nombre)">
+            <v-chip :color="getPrioridadColor(ticket.prioridad?.nombre || '')">
               {{ ticket.prioridad?.nombre }}
             </v-chip>
           </v-col>
@@ -181,8 +181,37 @@ import { enviarComentario } from '@/services/ticketService'
 
 const route = useRoute()
 const router = useRouter()
-const ticket = ref<any>(null)
-const trazabilidad = ref<any[]>([])
+interface Ticket {
+  id: number
+  titulo: string
+  estado?: { nombre: string }
+  creador?: { nombre: string }
+  createdAt: string
+  fechaFinalizacion?: string
+  descripcion: string
+  prioridad?: { nombre: string }
+  categoria?: { nombre: string }
+  servicio?: { nombre: string }
+  empresa?: { nombre: string }
+  usuarioAsignado?: { nombre: string }
+  nombreArchivo?: string
+  comentarios: Array<{
+    id: number
+    usuario?: { nombre: string }
+    comentario: string
+    createdAt: string
+  }>
+}
+
+const ticket = ref<Ticket | null>(null)
+interface Trazabilidad {
+  usuario?: { nombre: string; apellido: string }
+  estado?: { nombre: string }
+  comentario?: string
+  fecha: string
+}
+
+const trazabilidad = ref<Trazabilidad[]>([])
 const nuevoComentario = ref('')
 const authStore = authSetStore()
 const showConfirmDialog = ref(false)
@@ -241,7 +270,7 @@ async function obtenerTrazabilidad(id: number) {
 
 async function enviarNuevoComentario() {
   if (!nuevoComentario.value.trim()) return
-  
+
   // Mostrar diálogo de confirmación
   showConfirmDialog.value = true
   comentarioConfirmado.value = nuevoComentario.value
@@ -250,16 +279,16 @@ async function enviarNuevoComentario() {
 async function confirmarEnvio() {
   try {
     await enviarComentario(
-      ticket.value.id, 
-      authStore.user.id, 
+      ticket.value?.id || 0,
+      authStore.user?.id || 0,
       comentarioConfirmado.value
     )
     nuevoComentario.value = ''
      await Promise.all([
-      obtenerTicketDetalle(ticket.value.id),
-      obtenerTrazabilidad(ticket.value.id)
+      ticket.value ? obtenerTicketDetalle(ticket.value.id) : Promise.resolve(),
+      ticket.value ? obtenerTrazabilidad(ticket.value.id) : Promise.resolve()
     ]);
-    
+
     // Mostrar mensaje de éxito
     snackbarMessage.value = 'Comentario enviado correctamente'
     snackbarColor.value = 'success'

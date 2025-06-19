@@ -1,9 +1,7 @@
 <template>
   <v-container class="py-5">
     <v-card class="mb-5" outlined>
-      <v-card-title class="text-h5 text-center py-4">
-        FORMULARIO DE TICKET
-      </v-card-title>
+      <v-card-title class="text-h5 text-center py-4"> FORMULARIO DE TICKET </v-card-title>
       <v-card-text>
         <v-form @submit.prevent="onSubmit" class="form" style="color: black">
           <v-row class="mb-2">
@@ -142,7 +140,7 @@
                   variant="outlined"
                   class="mr-2 mb-2"
                   @click="triggerFileInput"
-                  style="text-transform: none;"
+                  style="text-transform: none"
                 >
                   Seleccionar archivo
                   <v-icon end>mdi-paperclip</v-icon>
@@ -152,7 +150,7 @@
                   type="file"
                   ref="fileInputRef"
                   @change="handleFileChange"
-                  style="display: none;"
+                  style="display: none"
                   accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
                   single
                 />
@@ -179,8 +177,15 @@
                   {{ existingFileName }} (Existente)
                 </v-chip>
 
-                <p v-if="isEditing && existingFileName && !fileNameDisplay" class="text-caption ml-2 mb-2">
-                  <a @click="downloadAttachment(editingTicketId!)" style="cursor: pointer; text-decoration: underline;">Descargar existente</a>
+                <p
+                  v-if="isEditing && existingFileName && !fileNameDisplay"
+                  class="text-caption ml-2 mb-2"
+                >
+                  <a
+                    @click="downloadAttachment(editingTicketId!)"
+                    style="cursor: pointer; text-decoration: underline"
+                    >Descargar existente</a
+                  >
                 </p>
               </div>
               <v-messages :value="[archivoAdjuntoError]" color="error"></v-messages>
@@ -200,13 +205,18 @@
     </v-card>
 
     <v-card outlined>
-      <v-card-title class="text-h6 py-4">
-        Lista de Tickets
-      </v-card-title>
+      <v-card-title class="text-h6 py-4"> Lista de Tickets </v-card-title>
 
       <v-row align="center" class="px-4 pb-4">
         <v-col cols="12" sm="6" md="5" lg="4">
-          <v-text-field v-model="search" label="Buscar ticket" prepend-inner-icon="mdi-magnify" outlined dense hide-details />
+          <v-text-field
+            v-model="search"
+            label="Buscar ticket"
+            prepend-inner-icon="mdi-magnify"
+            outlined
+            dense
+            hide-details
+          />
         </v-col>
         <v-col cols="12" sm="6" md="7" lg="8" class="d-flex justify-start">
           <!-- Botones de ordenamiento ahora son solo flechas con estilo primario -->
@@ -229,6 +239,7 @@
         v-model:sort-desc="sortDesc"
         class="elevation-1"
       >
+        <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template #item.nombreArchivo="{ item }">
           <v-btn
             v-if="item.nombreArchivo"
@@ -243,7 +254,7 @@
           </v-btn>
           <span v-else>N/A</span>
         </template>
-
+        <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template v-slot:item.actions="{ item }">
           <v-btn icon @click="editTicket(item)" class="mr-1">
             <v-icon color="primary">mdi-pencil</v-icon>
@@ -280,8 +291,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
-import { useForm, useField } from 'vee-validate';
+import { ref, onMounted, computed, watch } from 'vue'
+import { useForm, useField } from 'vee-validate'
 
 import {
   crearTicket,
@@ -294,156 +305,170 @@ import {
   obtenerTecnicos,
   obtenerCategorias,
   obtenerServicios,
-  downloadTicketAttachment
-} from '../services/ticketService';
-import ConfirmDialog from '../components/Confirmardialogo.vue';
+  downloadTicketAttachment,
+} from '../services/ticketService'
+import ConfirmDialog from '../components/confirmar_dialogo.vue'
 
 // --- Custom Validation Rules ---
-const required = (value: any) => {
+const required = (value: unknown) => {
   if (value === null || value === undefined || value === '') {
-    return 'Este campo es obligatorio.';
+    return 'Este campo es obligatorio.'
   }
   if (typeof value === 'number' && value <= 0) {
-    return 'Selecciona una opción válida.';
+    return 'Selecciona una opción válida.'
   }
-  return true;
-};
+  return true
+}
 
 const minLength = (value: string, min: number) => {
   if (!value || value.length < min) {
-    return `Debe tener al menos ${min} caracteres.`;
+    return `Debe tener al menos ${min} caracteres.`
   }
-  return true;
-};
+  return true
+}
 
 const maxLength = (value: string, max: number) => {
   if (value && value.length > max) {
-    return `No debe exceder los ${max} caracteres.`;
+    return `No debe exceder los ${max} caracteres.`
   }
-  return true;
-};
+  return true
+}
 
-const composeRules = (...rules: ((value: any, ...args: any[]) => true | string)[]) => {
-  return (value: any) => {
+const composeRules = (...rules: ((value: unknown, ...args: unknown[]) => true | string)[]) => {
+  return (value: unknown) => {
     for (const rule of rules) {
-      const result = rule(value);
+      const result = rule(value)
       if (result !== true) {
-        return result;
+        return result
       }
     }
-    return true;
-  };
-};
+    return true
+  }
+}
 
 // --- Form Initialization with VeeValidate ---
-const { handleSubmit, resetForm, setValues, errors, meta, validate, setErrors } = useForm();
+const { handleSubmit, resetForm, errors, setErrors } = useForm()
 
 // --- Field Definitions using useField ---
-const { value: titulo, errorMessage: tituloError, handleBlur: handleTituloBlur } = useField<string>(
+const {
+  value: titulo,
+  errorMessage: tituloError,
+  handleBlur: handleTituloBlur,
+} = useField<string>(
   'titulo',
-  composeRules((v: string) => required(v), (v: string) => minLength(v, 3), (v: string) => maxLength(v, 100)),
-  { initialValue: '' }
-);
+  composeRules(
+    (v: unknown) => required(v),
+    (v: unknown) => minLength(v as string, 3),
+    (v: unknown) => maxLength(v as string, 100),
+  ),
+  { initialValue: '' },
+)
 
-const { value: descripcion, errorMessage: descripcionError, handleBlur: handleDescripcionBlur } = useField<string>(
+const {
+  value: descripcion,
+  errorMessage: descripcionError,
+  handleBlur: handleDescripcionBlur,
+} = useField<string>(
   'descripcion',
-  composeRules((v: string) => required(v), (v: string) => minLength(v, 5), (v: string) => maxLength(v, 1000)),
-  { initialValue: '' }
-);
+  composeRules(
+    (v: unknown) => required(v),
+    (v: unknown) => minLength(v as string, 5),
+    (v: unknown) => maxLength(v as string, 1000),
+  ),
+  { initialValue: '' },
+)
 
 const { value: estado_id, errorMessage: estadoIdError } = useField<number | null>(
   'estado_id',
-  (v: any) => required(v),
-  { initialValue: null }
-);
+  (v: unknown) => required(v),
+  { initialValue: null },
+)
 
 const { value: prioridad_id, errorMessage: prioridadIdError } = useField<number | null>(
   'prioridad_id',
-  (v: any) => required(v),
-  { initialValue: null }
-);
+  (v: unknown) => required(v),
+  { initialValue: null },
+)
 
 const { value: empresa_id, errorMessage: empresaIdError } = useField<number | null>(
   'empresa_id',
-  (v: any) => required(v),
-  { initialValue: null }
-);
+  (v:  unknown) => required(v),
+  { initialValue: null },
+)
 
-const { value: usuario_asignado_id, errorMessage: usuarioAsignadoIdError } = useField<number | null>(
-  'usuario_asignado_id',
-  (v: any) => required(v),
-  { initialValue: null }
-);
+const { value: usuario_asignado_id, errorMessage: usuarioAsignadoIdError } = useField<
+  number | null
+>('usuario_asignado_id', (v: unknown) => required(v), { initialValue: null })
 
 const { value: categoria_id, errorMessage: categoriaIdError } = useField<number | null>(
   'categoria_id',
-  (v: any) => required(v),
-  { initialValue: null }
-);
+  (v: unknown) => required(v),
+  { initialValue: null },
+)
 
 const { value: servicio_id, errorMessage: servicioIdError } = useField<number | null>(
   'servicio_id',
-  (v: any) => required(v),
-  { initialValue: null }
-);
+  (v: unknown) => required(v),
+  { initialValue: null },
+)
 
 // --- UI States ---
-const isEditing = ref(false);
-const editingTicketId = ref<number | null>(null);
+const isEditing = ref(false)
+const editingTicketId = ref<number | null>(null)
 
 // --- Attachment Handling ---
-const archivoAdjunto = ref<File | null>(null);
-const fileNameDisplay = ref('');
-const existingFileName = ref<string | null>(null);
-const clearExistingAttachment = ref(false);
-const archivoAdjuntoError = ref('');
+const archivoAdjunto = ref<File | null>(null)
+const fileNameDisplay = ref('')
+const existingFileName = ref<string | null>(null)
+const clearExistingAttachment = ref(false)
+const archivoAdjuntoError = ref('')
 
 // --- Snackbar Messages ---
 const snackbar = ref({
   show: false,
   message: '',
   color: 'success',
-});
+})
 
 // --- Lists for v-select (loaded from API) ---
-const estados = ref<{ id: number; nombre: string }[]>([]);
-const prioridades = ref<{ id: number; nombre: string }[]>([]);
-const empresas = ref<{ id: number; nombre: string }[]>([]);
-const usuariosAsignados = ref<{ id: number; nombreCompleto: string }[]>([]);
-const categorias = ref<{ id: number; nombre: string }[]>([]);
-const servicios = ref<{ id: number; nombre: string }[]>([]);
+const estados = ref<{ id: number; nombre: string }[]>([])
+const prioridades = ref<{ id: number; nombre: string }[]>([])
+const empresas = ref<{ id: number; nombre: string }[]>([])
+const usuariosAsignados = ref<{ id: number; nombreCompleto: string }[]>([])
+const categorias = ref<{ id: number; nombre: string }[]>([])
+const servicios = ref<{ id: number; nombre: string }[]>([])
 
 // --- Confirmation Modal Variables ---
-const showConfirmDialog = ref(false);
-const confirmDialogTitle = ref('');
-const confirmDialogMessage = ref('');
-const confirmDialogConfirmText = ref('');
-const confirmDialogConfirmColor = ref('');
-const currentAction = ref('');
-const ticketToDeleteId = ref<number | null>(null);
+const showConfirmDialog = ref(false)
+const confirmDialogTitle = ref('')
+const confirmDialogMessage = ref('')
+const confirmDialogConfirmText = ref('')
+const confirmDialogConfirmColor = ref('')
+const currentAction = ref('')
+const ticketToDeleteId = ref<number | null>(null)
 
 /**
  * Preloads ticket data into the form for editing.
  * @param ticket The ticket object to edit.
  */
-function editTicket(ticket: any) {
-  isEditing.value = true;
-  editingTicketId.value = ticket.id;
+function editTicket(ticket: { id: number; titulo: string; descripcion: string; estado?: { id: number }; prioridad?: { id: number }; empresa?: { id: number }; usuarioAsignado?: { id: number }; categoria?: { id: number }; servicio?: { id: number }; nombreArchivo?: string }) {
+  isEditing.value = true
+  editingTicketId.value = ticket.id
 
-  titulo.value = ticket.titulo;
-  descripcion.value = ticket.descripcion;
-  estado_id.value = ticket.estado?.id || null;
-  prioridad_id.value = ticket.prioridad?.id || null;
-  empresa_id.value = ticket.empresa?.id || null;
-  usuario_asignado_id.value = ticket.usuarioAsignado?.id || null;
-  categoria_id.value = ticket.categoria?.id || null;
-  servicio_id.value = ticket.servicio?.id || null;
+  titulo.value = ticket.titulo
+  descripcion.value = ticket.descripcion
+  estado_id.value = ticket.estado?.id || null
+  prioridad_id.value = ticket.prioridad?.id || null
+  empresa_id.value = ticket.empresa?.id || null
+  usuario_asignado_id.value = ticket.usuarioAsignado?.id || null
+  categoria_id.value = ticket.categoria?.id || null
+  servicio_id.value = ticket.servicio?.id || null
 
-  archivoAdjunto.value = null;
-  fileNameDisplay.value = '';
-  existingFileName.value = ticket.nombreArchivo || null;
-  clearExistingAttachment.value = false;
-  archivoAdjuntoError.value = '';
+  archivoAdjunto.value = null
+  fileNameDisplay.value = ''
+  existingFileName.value = ticket.nombreArchivo || null
+  clearExistingAttachment.value = false
+  archivoAdjuntoError.value = ''
 }
 
 /**
@@ -451,31 +476,31 @@ function editTicket(ticket: any) {
  * VeeValidate handles prior validation. If valid, the callback is executed.
  */
 const onSubmit = handleSubmit(async (values) => {
-  console.log('Form is valid, values:', values);
+  console.log('Form is valid, values:', values)
 
   if (isEditing.value) {
-    confirmDialogTitle.value = 'Confirmar Actualización';
-    confirmDialogMessage.value = '¿Estás seguro de que quieres actualizar este ticket?';
-    confirmDialogConfirmText.value = 'Actualizar';
-    confirmDialogConfirmColor.value = 'primary';
-    currentAction.value = 'update';
+    confirmDialogTitle.value = 'Confirmar Actualización'
+    confirmDialogMessage.value = '¿Estás seguro de que quieres actualizar este ticket?'
+    confirmDialogConfirmText.value = 'Actualizar'
+    confirmDialogConfirmColor.value = 'primary'
+    currentAction.value = 'update'
   } else {
-    confirmDialogTitle.value = 'Confirmar Creación';
-    confirmDialogMessage.value = '¿Estás seguro de que quieres crear este ticket?';
-    confirmDialogConfirmText.value = 'Crear';
-    confirmDialogConfirmColor.value = 'success';
-    currentAction.value = 'create';
+    confirmDialogTitle.value = 'Confirmar Creación'
+    confirmDialogMessage.value = '¿Estás seguro de que quieres crear este ticket?'
+    confirmDialogConfirmText.value = 'Crear'
+    confirmDialogConfirmColor.value = 'success'
+    currentAction.value = 'create'
   }
-  showConfirmDialog.value = true;
-});
+  showConfirmDialog.value = true
+})
 
 /**
  * Executed when the user confirms an action in the modal.
  * Performs the CRUD operation (create, update, delete).
  */
 async function handleConfirmAction() {
-  snackbar.value.show = false;
-  archivoAdjuntoError.value = '';
+  snackbar.value.show = false
+  archivoAdjuntoError.value = ''
 
   const formValues = {
     titulo: titulo.value,
@@ -486,99 +511,121 @@ async function handleConfirmAction() {
     usuario_asignado_id: usuario_asignado_id.value,
     categoria_id: categoria_id.value,
     servicio_id: servicio_id.value,
-  };
+  }
 
   try {
     if (currentAction.value === 'create' || currentAction.value === 'update') {
-      const formData = new FormData();
-      formData.append('titulo', formValues.titulo as string);
-      formData.append('descripcion', formValues.descripcion as string);
+      const formData = new FormData()
+      formData.append('titulo', formValues.titulo as string)
+      formData.append('descripcion', formValues.descripcion as string)
 
-      formData.append('estado_id', formValues.estado_id !== null ? String(formValues.estado_id) : '');
+      formData.append(
+        'estado_id',
+        formValues.estado_id !== null ? String(formValues.estado_id) : '',
+      )
       // CORRECCIÓN: Cambiado 'formcomes.prioridad_id' a 'formValues.prioridad_id'
-      formData.append('prioridad_id', formValues.prioridad_id !== null ? String(formValues.prioridad_id) : '');
-      formData.append('empresas_id', formValues.empresa_id !== null ? String(formValues.empresa_id) : '');
+      formData.append(
+        'prioridad_id',
+        formValues.prioridad_id !== null ? String(formValues.prioridad_id) : '',
+      )
+      formData.append(
+        'empresas_id',
+        formValues.empresa_id !== null ? String(formValues.empresa_id) : '',
+      )
 
       if (formValues.usuario_asignado_id !== null && formValues.usuario_asignado_id > 0) {
-        formData.append('usuario_asignado_id', String(formValues.usuario_asignado_id));
+        formData.append('usuario_asignado_id', String(formValues.usuario_asignado_id))
       } else if (formValues.usuario_asignado_id === null && isEditing.value) {
-        formData.append('usuario_asignado_id', '');
+        formData.append('usuario_asignado_id', '')
       }
 
       if (formValues.categoria_id !== null && formValues.categoria_id > 0) {
-        formData.append('categoria_id', String(formValues.categoria_id));
+        formData.append('categoria_id', String(formValues.categoria_id))
       } else if (formValues.categoria_id === null && isEditing.value) {
-        formData.append('categoria_id', '');
+        formData.append('categoria_id', '')
       }
 
       if (formValues.servicio_id !== null && formValues.servicio_id > 0) {
-        formData.append('servicio_id', String(formValues.servicio_id));
+        formData.append('servicio_id', String(formValues.servicio_id))
       } else if (formValues.servicio_id === null && isEditing.value) {
-        formData.append('servicio_id', '');
+        formData.append('servicio_id', '')
       }
 
       if (archivoAdjunto.value) {
-        formData.append('archivo_adjunto', archivoAdjunto.value);
+        formData.append('archivo_adjunto', archivoAdjunto.value)
       } else if (isEditing.value && clearExistingAttachment.value) {
-        formData.append('clear_adjunto', 'true');
+        formData.append('clear_adjunto', 'true')
       }
 
       if (currentAction.value === 'create') {
-        const nuevoTicket = await crearTicket(formData);
-        tickets.value.unshift(nuevoTicket);
-        sortBy.value = [{ key: 'id', order: 'desc' }];
-        snackbar.value = { show: true, message: 'Ticket creado exitosamente.', color: 'success' };
+        const nuevoTicket = await crearTicket(formData)
+        tickets.value.unshift(nuevoTicket)
+        sortBy.value = [{ key: 'id', order: 'desc' }]
+        snackbar.value = { show: true, message: 'Ticket creado exitosamente.', color: 'success' }
       } else if (currentAction.value === 'update') {
-        const actualizado = await actualizarTicket(editingTicketId.value!, formData);
-        const index = tickets.value.findIndex(t => t.id === editingTicketId.value);
+        const actualizado = await actualizarTicket(editingTicketId.value!, formData)
+        const index = tickets.value.findIndex((t) => t.id === editingTicketId.value)
         if (index !== -1) {
-          tickets.value[index] = actualizado;
+          tickets.value[index] = actualizado
         }
-        await cargarTickets();
-        snackbar.value = { show: true, message: 'Ticket actualizado correctamente.', color: 'success' };
+        await cargarTickets()
+        snackbar.value = {
+          show: true,
+          message: 'Ticket actualizado correctamente.',
+          color: 'success',
+        }
       }
     } else if (currentAction.value === 'delete') {
       if (ticketToDeleteId.value !== null) {
-        await eliminarTicket(ticketToDeleteId.value);
-        tickets.value = tickets.value.filter(t => t.id !== ticketToDeleteId.value);
-        await cargarTickets();
-        snackbar.value = { show: true, message: 'Ticket eliminado correctamente.', color: 'success' };
+        await eliminarTicket(ticketToDeleteId.value)
+        tickets.value = tickets.value.filter((t) => t.id !== ticketToDeleteId.value)
+        await cargarTickets()
+        snackbar.value = {
+          show: true,
+          message: 'Ticket eliminado correctamente.',
+          color: 'success',
+        }
       }
     }
-    resetFormAndState();
-  } catch (err: any) {
-    console.error('Error during ticket operation:', err);
-    let messageToDisplay = 'Error al procesar la operación del ticket.';
-    let backendErrors: { [key: string]: string } = {};
+    resetFormAndState()
+  } catch (err: unknown) {
+    console.error('Error during ticket operation:', err)
+    let messageToDisplay = 'Error al procesar la operación del ticket.'
+    const backendErrors: { [key: string]: string } = {}
 
-    if (err.message && err.message.startsWith('{') && err.message.endsWith('}')) {
+    if (typeof err === 'object' && err !== null && 'message' in err && typeof err.message === 'string' && err.message.startsWith('{') && err.message.endsWith('}')) {
       try {
-        const errorObj = JSON.parse(err.message);
+        const errorObj = JSON.parse(err.message)
         if (errorObj.errors && Array.isArray(errorObj.errors)) {
-          messageToDisplay = 'Se encontraron errores de validación del servidor. Por favor, revisa los campos marcados.';
-          errorObj.errors.forEach((error: any) => {
-            const fieldName = error.field === 'empresas_id' ? 'empresa_id' : error.field;
-            backendErrors[fieldName] = error.message;
+          messageToDisplay =
+            'Se encontraron errores de validación del servidor. Por favor, revisa los campos marcados.'
+          errorObj.errors.forEach((error: { field: string; message: string }) => {
+            const fieldName = error.field === 'empresas_id' ? 'empresa_id' : error.field
+            backendErrors[fieldName] = error.message
 
             if (fieldName === 'archivo_adjunto') {
-              archivoAdjuntoError.value = error.message;
+              archivoAdjuntoError.value = error.message
             }
-          });
-          setErrors(backendErrors);
+          })
+          setErrors(backendErrors)
         } else if (errorObj.message) {
-          messageToDisplay = errorObj.message;
+          messageToDisplay = errorObj.message
         }
-      } catch (parseError) {
-        messageToDisplay = err.message;
+      } catch {
+        messageToDisplay = err.message
       }
     } else {
-      messageToDisplay = err.message || 'Error desconocido al procesar la operación del ticket.';
+      if (err instanceof Error) {
+        messageToDisplay = err.message || 'Error desconocido al procesar la operación del ticket.'
+      } else {
+        messageToDisplay = 'Error desconocido al procesar la operación del ticket.'
+      }
     }
 
-    snackbar.value = { show: true, message: messageToDisplay, color: 'error' };
+    snackbar.value = { show: true, message: messageToDisplay, color: 'error' }
   } finally {
-    showConfirmDialog.value = false;
-    currentAction.value = '';
+    showConfirmDialog.value = false
+    currentAction.value = ''
   }
 }
 
@@ -586,28 +633,41 @@ async function handleConfirmAction() {
  * Resets the form and editing state, including VeeValidate.
  */
 function resetFormAndState() {
-  resetForm();
+  resetForm()
 
-  isEditing.value = false;
-  editingTicketId.value = null;
-  ticketToDeleteId.value = null;
+  isEditing.value = false
+  editingTicketId.value = null
+  ticketToDeleteId.value = null
 
-  archivoAdjunto.value = null;
-  fileNameDisplay.value = '';
-  existingFileName.value = null;
-  clearExistingAttachment.value = false;
-  archivoAdjuntoError.value = '';
+  archivoAdjunto.value = null
+  fileNameDisplay.value = ''
+  existingFileName.value = null
+  clearExistingAttachment.value = false
+  archivoAdjuntoError.value = ''
 }
 
 // --- Ticket Table State and Logic ---
-const tickets = ref<any[]>([]);
-const search = ref('');
-type MySortItem = {
-  key: string;
-  order: boolean | 'asc' | 'desc' | undefined;
+type Ticket = {
+  id: number;
+  titulo: string;
+  descripcion: string;
+  estado?: { id: number; nombre: string };
+  prioridad?: { id: number; nombre: string };
+  empresa?: { id: number; nombre: string };
+  usuarioAsignado?: { id: number; nombreCompleto: string };
+  categoria?: { id: number; nombre: string };
+  servicio?: { id: number; nombre: string };
+  nombreArchivo?: string;
 };
-const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'desc' }]);
-const sortDesc = ref(false); // Mantener sortDesc para compatibilidad, aunque Vuetify 3 usa `order` en `sortBy`
+
+const tickets = ref<Ticket[]>([])
+const search = ref('')
+type MySortItem = {
+  key: string
+  order: boolean | 'asc' | 'desc' | undefined
+}
+const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'desc' }])
+const sortDesc = ref(false) // Mantener sortDesc para compatibilidad, aunque Vuetify 3 usa `order` en `sortBy`
 
 const headers = [
   { title: 'ID', key: 'id', sortable: false }, // CAMBIO: sortable: false para quitar la flecha
@@ -618,185 +678,215 @@ const headers = [
   { title: 'Técnico', key: 'usuarioAsignado.nombreCompleto', sortable: true }, // Ahora sortable: true
   { title: 'Adjunto', key: 'nombreArchivo', sortable: false },
   { title: 'Acciones', key: 'actions', sortable: false },
-];
-
-const sortByIdAsc = () => {
-  sortBy.value = [{ key: 'id', order: 'asc' }];
-};
+]
 
 const sortByIdDesc = () => {
-  sortBy.value = [{ key: 'id', order: 'desc' }];
-};
+  sortBy.value = [{ key: 'id', order: 'desc' }]
+}
 
 async function cargarTickets() {
   try {
-    tickets.value = await obtenerTickets();
-  } catch (err: any) {
+    tickets.value = await obtenerTickets()
+  } catch (err: unknown) {
     snackbar.value = {
       show: true,
-      message: err.message || 'Error al cargar tickets',
+      message: (err instanceof Error ? err.message : 'Error desconocido') || 'Error al cargar tickets',
       color: 'error',
-    };
+    }
   }
 }
 
 async function cargarListasReferencia() {
   try {
-    estados.value = await obtenerEstados();
-    prioridades.value = await obtenerPrioridades();
-    empresas.value = await obtenerEmpresas();
-    usuariosAsignados.value = await obtenerTecnicos();
-    categorias.value = await obtenerCategorias();
-    servicios.value = await obtenerServicios();
-    console.log('Estados cargados:', estados.value);
-    console.log('Prioridades cargadas:', prioridades.value);
-    console.log('Empresas cargadas:', empresas.value);
-  } catch (error: any) {
-    console.error('Error al cargar listas de referencia:', error);
-    snackbar.value = { show: true, message: error.message || 'Error al cargar opciones de filtro.', color: 'error' };
+    estados.value = await obtenerEstados()
+    prioridades.value = await obtenerPrioridades()
+    empresas.value = await obtenerEmpresas()
+    usuariosAsignados.value = (await obtenerTecnicos()) as unknown as {
+      id: number
+      nombreCompleto: string
+    }[]
+    categorias.value = await obtenerCategorias()
+    servicios.value = await obtenerServicios()
+    console.log('Estados cargados:', estados.value)
+    console.log('Prioridades cargadas:', prioridades.value)
+    console.log('Empresas cargadas:', empresas.value)
+  } catch (error: unknown) {
+    console.error('Error al cargar listas de referencia:', error)
+    snackbar.value = {
+      show: true,
+      message: error instanceof Error ? error.message : 'Error al cargar opciones de filtro.',
+      color: 'error',
+    }
   }
 }
 
 const filteredTickets = computed(() => {
-  let items = [...tickets.value]; // Crear una copia para poder ordenar sin mutar el original
+  let items = [...tickets.value] // Crear una copia para poder ordenar sin mutar el original
 
   // Aplicar el filtro de búsqueda
   if (search.value) {
-    const searchTerm = search.value.toLowerCase().trim();
-    items = items.filter((t) =>
-      String(t.id).toLowerCase().includes(searchTerm) ||
-      t.titulo.toLowerCase().includes(searchTerm) ||
-      (t.empresa?.nombre || '').toLowerCase().includes(searchTerm) ||
-      (t.prioridad?.nombre || '').toLowerCase().includes(searchTerm) ||
-      (t.estado?.nombre || '').toLowerCase().includes(searchTerm) ||
-      (t.usuarioAsignado?.nombreCompleto || '').toLowerCase().includes(searchTerm) ||
-      (t.nombreArchivo || '').toLowerCase().includes(searchTerm)
-    );
+    const searchTerm = search.value.toLowerCase().trim()
+    items = items.filter(
+      (t) =>
+        String(t.id).toLowerCase().includes(searchTerm) ||
+        t.titulo.toLowerCase().includes(searchTerm) ||
+        (t.empresa?.nombre || '').toLowerCase().includes(searchTerm) ||
+        (t.prioridad?.nombre || '').toLowerCase().includes(searchTerm) ||
+        (t.estado?.nombre || '').toLowerCase().includes(searchTerm) ||
+        (t.usuarioAsignado?.nombreCompleto || '').toLowerCase().includes(searchTerm) ||
+        (t.nombreArchivo || '').toLowerCase().includes(searchTerm),
+    )
   }
 
   // Aplicar el ordenamiento
   if (sortBy.value && sortBy.value.length > 0) {
-    const sortKey = sortBy.value[0].key;
-    const sortOrder = sortBy.value[0].order;
+    const sortKey = sortBy.value[0].key
+    const sortOrder = sortBy.value[0].order
 
     items.sort((a, b) => {
-      let valA = getValueByKey(a, sortKey);
-      let valB = getValueByKey(b, sortKey);
+      let valA = getValueByKey(a, sortKey)
+      let valB = getValueByKey(b, sortKey)
 
-      if (valA === null || valA === undefined) valA = '';
-      if (valB === null || valB === undefined) valB = '';
+      if (valA === null || valA === undefined) valA = ''
+      if (valB === null || valB === undefined) valB = ''
 
       if (typeof valA === 'string' && typeof valB === 'string') {
-        return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA)
       } else {
-        return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
+        return sortOrder === 'asc' ? Number(valA) - Number(valB) : Number(valB) - Number(valA)
       }
-    });
+    })
   }
 
-  return items;
-});
+  return items
+})
 
 // Helper function to get nested object values (copied from project-management-table as it's useful here too)
-function getValueByKey(obj: any, key: string): any {
-  return key.split('.').reduce((o, i) => (o ? o[i] : undefined), obj);
+function getValueByKey(obj: Record<string, unknown>, key: string): unknown {
+  return key.split('.').reduce<Record<string, unknown> | undefined>((o, i) => {
+    if (o && typeof o === 'object' && !Array.isArray(o)) {
+      return o[i] as Record<string, unknown> | undefined;
+    }
+    return undefined;
+  }, obj as Record<string, unknown>);
 }
 
 function handleDeleteTicket(id: number) {
-  ticketToDeleteId.value = id;
-  confirmDialogTitle.value = 'Confirmar Eliminación';
-  confirmDialogMessage.value = '¿Estás seguro de que quieres eliminar este ticket? Esta acción es irreversible.';
-  confirmDialogConfirmText.value = 'Eliminar';
-  confirmDialogConfirmColor.value = 'error';
-  currentAction.value = 'delete';
-  showConfirmDialog.value = true;
+  ticketToDeleteId.value = id
+  confirmDialogTitle.value = 'Confirmar Eliminación'
+  confirmDialogMessage.value =
+    '¿Estás seguro de que quieres eliminar este ticket? Esta acción es irreversible.'
+  confirmDialogConfirmText.value = 'Eliminar'
+  confirmDialogConfirmColor.value = 'error'
+  currentAction.value = 'delete'
+  showConfirmDialog.value = true
 }
 
 function handleCancelAction() {
-  ticketToDeleteId.value = null;
-  currentAction.value = '';
-  resetFormAndState();
+  ticketToDeleteId.value = null
+  currentAction.value = ''
+  resetFormAndState()
 }
 
 // Functions to handle file attachment
-const fileInputRef = ref<HTMLInputElement | null>(null);
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
 function triggerFileInput() {
-  fileInputRef.value?.click();
+  fileInputRef.value?.click()
 }
 
 function handleFileChange(event: Event) {
-  archivoAdjuntoError.value = '';
-  const target = event.target as HTMLInputElement;
+  archivoAdjuntoError.value = ''
+  const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
-    const file = target.files[0];
-    const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx'];
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    const file = target.files[0]
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx']
+    const fileExtension = file.name.split('.').pop()?.toLowerCase()
 
     if (fileExtension && allowedExtensions.includes(fileExtension)) {
-      if (file.size <= 5 * 1024 * 1024) { // 5 MB in bytes
-        archivoAdjunto.value = file;
-        fileNameDisplay.value = archivoAdjunto.value.name;
-        clearExistingAttachment.value = false;
-        archivoAdjuntoError.value = '';
+      if (file.size <= 5 * 1024 * 1024) {
+        // 5 MB in bytes
+        archivoAdjunto.value = file
+        fileNameDisplay.value = archivoAdjunto.value.name
+        clearExistingAttachment.value = false
+        archivoAdjuntoError.value = ''
       } else {
-        snackbar.value = { show: true, message: 'El archivo es demasiado grande (máx. 5MB).', color: 'warning' };
-        archivoAdjuntoError.value = 'El archivo es demasiado grande (máx. 5MB).';
-        clearSelectedFile();
+        snackbar.value = {
+          show: true,
+          message: 'El archivo es demasiado grande (máx. 5MB).',
+          color: 'warning',
+        }
+        archivoAdjuntoError.value = 'El archivo es demasiado grande (máx. 5MB).'
+        clearSelectedFile()
       }
     } else {
-      snackbar.value = { show: true, message: 'Tipo de archivo no permitido. Solo se aceptan imágenes, PDF, y documentos de Office.', color: 'warning' };
-      archivoAdjuntoError.value = 'Tipo de archivo no permitido.';
-      clearSelectedFile();
+      snackbar.value = {
+        show: true,
+        message:
+          'Tipo de archivo no permitido. Solo se aceptan imágenes, PDF, y documentos de Office.',
+        color: 'warning',
+      }
+      archivoAdjuntoError.value = 'Tipo de archivo no permitido.'
+      clearSelectedFile()
     }
   } else {
-    archivoAdjunto.value = null;
-    fileNameDisplay.value = '';
-    archivoAdjuntoError.value = '';
+    archivoAdjunto.value = null
+    fileNameDisplay.value = ''
+    archivoAdjuntoError.value = ''
   }
 }
 
 function clearSelectedFile() {
-  archivoAdjunto.value = null;
-  fileNameDisplay.value = '';
+  archivoAdjunto.value = null
+  fileNameDisplay.value = ''
   if (fileInputRef.value) {
-    fileInputRef.value.value = '';
+    fileInputRef.value.value = ''
   }
-  archivoAdjuntoError.value = '';
+  archivoAdjuntoError.value = ''
 }
 
 function removeExistingAttachment() {
-  existingFileName.value = null;
-  clearExistingAttachment.value = true;
-  clearSelectedFile();
+  existingFileName.value = null
+  clearExistingAttachment.value = true
+  clearSelectedFile()
 }
 
 async function downloadAttachment(ticketId: number) {
   try {
-    await downloadTicketAttachment(ticketId);
-  } catch (error: any) {
-    snackbar.value = { show: true, message: error.message || 'Error al descargar el archivo.', color: 'error' };
+    await downloadTicketAttachment(ticketId)
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Error al descargar el archivo.';
+    snackbar.value = {
+      show: true,
+      message: errorMessage,
+      color: 'error',
+    }
   }
 }
 
 // --- Lifecycle Hooks ---
 onMounted(async () => {
-  await cargarTickets();
-  await cargarListasReferencia();
-  sortByIdDesc(); // Por defecto, mostrar los más recientes
+  await cargarTickets()
+  await cargarListasReferencia()
+  sortByIdDesc() // Por defecto, mostrar los más recientes
 
-  watch(errors, (newErrors) => {
-    console.log('VeeValidate errors updated:', newErrors);
-  }, { deep: true });
-});
+  watch(
+    errors,
+    (newErrors) => {
+      console.log('VeeValidate errors updated:', newErrors)
+    },
+    { deep: true },
+  )
+})
 </script>
 
 <style scoped>
 .form {
   padding: 1rem;
 }
-.text-h5, .text-h6 {
-  color: #1976D2;
+.text-h5,
+.text-h6 {
+  color: #1976d2;
   font-weight: bold;
 }
 /* Estilos para que los botones de toggle se vean bien sin texto */

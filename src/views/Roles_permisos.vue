@@ -84,20 +84,20 @@
             <v-card-title class="text-h6">
                 Asignaciones Existentes para el Rol Seleccionado
             </v-card-title>
-            
+
             <v-row align="center" class="px-4 pb-4">
-                <v-col cols="12" sm="6" md="5" lg="4"> 
-                    <v-text-field 
-                        v-model="search" 
-                        label="Buscar asignaciones" 
-                        prepend-inner-icon="mdi-magnify" 
-                        outlined 
-                        dense 
-                        hide-details 
+                <v-col cols="12" sm="6" md="5" lg="4">
+                    <v-text-field
+                        v-model="search"
+                        label="Buscar asignaciones"
+                        prepend-inner-icon="mdi-magnify"
+                        outlined
+                        dense
+                        hide-details
                     />
                 </v-col>
-                
-                <v-col cols="12" sm="6" md="7" lg="8" class="d-flex justify-start"> 
+
+                <v-col cols="12" sm="6" md="7" lg="8" class="d-flex justify-start">
                     <!-- Botones de ordenamiento ahora son solo flechas con estilo primario -->
                     <v-btn-toggle v-model="sortBy[0].order" mandatory variant="elevated" color="primary">
                         <v-btn value="asc" class="pa-2">
@@ -120,16 +120,19 @@
                 :no-data-text="noDataText"
                 v-model:sort-by="sortBy"
             >
+                <!-- eslint-disable-next-line vue/valid-v-slot -->
                 <template v-slot:item.rol="{ item }">
                     {{ item.rol ? item.rol.nombre : 'N/A' }}
                 </template>
+                <!-- eslint-disable-next-line vue/valid-v-slot -->
                 <template v-slot:item.item="{ item }">
                     {{ item.item ? item.item.nombre : 'Global' }}
                 </template>
+                <!-- eslint-disable-next-line vue/valid-v-slot -->
                 <template v-slot:item.permiso="{ item }">
                     {{ item.permiso ? item.permiso.nombre : 'N/A' }}
                 </template>
-
+                <!-- eslint-disable-next-line vue/valid-v-slot -->
                 <template v-slot:item.acciones="{ item }">
                     <v-btn icon @click="editAsignacion(item)" class="mr-1">
                         <v-icon color="blue">mdi-pencil</v-icon>
@@ -170,7 +173,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 // Asegúrate de que la ruta sea correcta según tu estructura de carpetas
-import RolesPermisosService, { Rol, Permiso, Item, AsignacionPermiso, CreateAsignacionData } from '../services/Roles_permisosService';
+import RolesPermisosService from '../services/Roles_permisosService';
+import type { Rol, Permiso, Item, AsignacionPermiso, CreateAsignacionData } from '../services/Roles_permisosService';
 
 // --- Variables Reactivas del Formulario ---
 const roles = ref<Rol[]>([]);
@@ -195,7 +199,7 @@ type MySortItem = {
     key: string
     order: boolean | 'asc' | 'desc' | undefined
 }
-const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }]); 
+const sortBy = ref<MySortItem[]>([{ key: 'id', order: 'asc' }]);
 
 // Headers de la tabla
 const headers = [
@@ -238,7 +242,7 @@ const filteredAsignaciones = computed(() => {
     const lowerCaseSearch = search.value.toLowerCase();
     items = items.filter(asignacion =>
         (asignacion.rol?.nombre || '').toLowerCase().includes(lowerCaseSearch) ||
-        (asignacion.item?.nombre || 'global').toLowerCase().includes(lowerCaseSearch) || 
+        (asignacion.item?.nombre || 'global').toLowerCase().includes(lowerCaseSearch) ||
         (asignacion.permiso?.nombre || '').toLowerCase().includes(lowerCaseSearch)
     );
 
@@ -257,7 +261,7 @@ const filteredAsignaciones = computed(() => {
             if (typeof valA === 'string' && typeof valB === 'string') {
                 return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
             } else {
-                return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
+                return sortOrder === 'asc' ? (Number(valA) - Number(valB)) : (Number(valB) - Number(valA));
             }
         });
     }
@@ -266,8 +270,13 @@ const filteredAsignaciones = computed(() => {
 });
 
 // Helper function to get nested object values
-function getValueByKey(obj: any, key: string): any {
-  return key.split('.').reduce((o, i) => (o ? o[i] : undefined), obj);
+function getValueByKey(obj: Record<string, unknown>, key: string): unknown {
+  return key.split('.').reduce<Record<string, unknown> | undefined>((o, i) => {
+    if (o && typeof o === 'object' && !Array.isArray(o)) {
+      return (o as Record<string, unknown>)[i] as Record<string, unknown> | undefined;
+    }
+    return undefined;
+  }, obj);
 }
 
 // --- Funciones de Utilidad y Alertas ---
@@ -337,7 +346,7 @@ const submitForm = async () => {
         showAlert('Debes seleccionar al menos un permiso o una vista para crear una asignación.', 'error');
         return;
     }
-    
+
     // Obtener el ID del ítem seleccionado en el v-select (para un permiso específico de ítem)
     const itemIdFromSelect = selectedItem.value ? selectedItem.value.id : null;
 
@@ -346,8 +355,8 @@ const submitForm = async () => {
     const dataToSend: CreateAsignacionData = {
         rolId: selectedRolId.value,
         itemId: itemIdFromSelect, // Este es el itemId general para el formulario, no solo para vistas
-        selectedPermisos: [...selectedPermisos.value], 
-        selectedVistas: [...selectedVistas.value],     
+        selectedPermisos: [...selectedPermisos.value],
+        selectedVistas: [...selectedVistas.value],
     };
 
     try {
@@ -358,7 +367,7 @@ const submitForm = async () => {
             // 1. Eliminar la asignación original
             // Asegurarse de que `itemIdForDeletion` sea 'null' string si es null
             const originalItemIdForDeletion = originalAssignment.item_id === null ? 'null' : originalAssignment.item_id;
-            
+
             console.log('DEBUG: Eliminando asignación original para actualización:', {
                 rol_id: originalAssignment.rol_id,
                 permiso_id: originalAssignment.permiso_id,
@@ -370,7 +379,7 @@ const submitForm = async () => {
                 originalAssignment.permiso_id,
                 originalItemIdForDeletion
             );
-            
+
             // 2. Si hay nuevas selecciones en el formulario, crear las nuevas asignaciones.
             // La lógica aquí es más simple: si el formulario tiene algo seleccionado, se envía.
             if (dataToSend.selectedPermisos.length > 0 || dataToSend.selectedVistas.length > 0) {
@@ -381,16 +390,16 @@ const submitForm = async () => {
                 // Si no se seleccionó nada nuevo después de eliminar la original, se considera una eliminación efectiva
                 showAlert('Asignación eliminada exitosamente (no se seleccionaron nuevos permisos/vistas).', 'success');
             }
-            
+
             editingAssignment.value = null; // Salir del modo edición
-            
+
         } else {
             // --- Lógica de Creación de Nueva Asignación ---
             console.log('DEBUG: Creando nueva asignación:', dataToSend);
             await RolesPermisosService.createAsignacion(dataToSend);
             showAlert('Asignaciones guardadas exitosamente.', 'success');
         }
-        
+
         // Recargar las asignaciones para el rol actual después de cualquier operación CRUD
         if (selectedRolId.value !== null) {
             await fetchAsignacionesPorRol(selectedRolId.value);
@@ -399,7 +408,9 @@ const submitForm = async () => {
     } catch (error) {
         console.error('Error al guardar/actualizar asignación:', error);
         // Mostrar el mensaje de error del backend si está disponible
-        const errorMessage = (error as any).message || 'Error desconocido al procesar la asignación.';
+        const errorMessage = typeof error === 'object' && error !== null && 'message' in error
+            ? (error as { message: string }).message
+            : 'Error desconocido al procesar la asignación.';
         showAlert('Error al guardar/actualizar asignaciones: ' + errorMessage, 'error');
     }
 };
@@ -482,9 +493,9 @@ const deleteAsignacionConfirmado = async () => {
                 itemIdForDeletion
             );
             showAlert('Asignación eliminada exitosamente.', 'success');
-            
+
             // Si la asignación eliminada era la que se estaba editando, salir del modo edición
-            if (editingAssignment.value && 
+            if (editingAssignment.value &&
                 editingAssignment.value.rol_id === itemToDelete.value.rol_id &&
                 editingAssignment.value.permiso_id === itemToDelete.value.permiso_id &&
                 editingAssignment.value.item_id === itemToDelete.value.item_id
@@ -501,21 +512,12 @@ const deleteAsignacionConfirmado = async () => {
             }
         } catch (error) {
             console.error('Error al eliminar asignación:', error);
-            const errorMessage = (error as any).message || 'Error desconocido al eliminar la asignación.';
+            const errorMessage = (error as { message?: string }).message || 'Error desconocido al eliminar la asignación.';
             showAlert('Error al eliminar asignación: ' + errorMessage, 'error');
         } finally {
             closeDelete();
         }
     }
-};
-
-// --- Ordenación de la tabla ---
-const sortByIdAsc = () => {
-    sortBy.value = [{ key: 'id', order: 'asc' }];
-};
-
-const sortByIdDesc = () => {
-    sortBy.value = [{ key: 'id', order: 'desc' }];
 };
 
 // --- Hooks de Ciclo de Vida y Watchers ---

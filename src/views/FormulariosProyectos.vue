@@ -23,7 +23,7 @@
                 v-model="nombre"
                 required
                 outlined
-                :rules="[rules.required, rules.minLength, rules.maxLength, validateNombreProyectoUnico]" 
+                :rules="[rules.required, rules.minLength, rules.maxLength, validateNombreProyectoUnico]"
                 :error-messages="validationErrors.nombre"
               />
             </v-col>
@@ -78,6 +78,7 @@
         v-model:sort-by="sortBy"
         class="elevation-1"
       >
+      <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template v-slot:item.actions="{ item }">
           <v-btn icon @click="editProyecto(item)" class="mr-1">
             <v-icon color="primary">mdi-pencil</v-icon>
@@ -118,13 +119,27 @@ import { ref, onMounted, computed } from 'vue'
 // Asegúrate de que la ruta a tu servicio es correcta
 import { obtenerProyectos, obtenerEmpresas, crearProyecto, actualizarProyecto, eliminarProyecto, verificarNombreProyectoUnico } from '../services/proyectosService' // <-- Importado verificarNombreProyectoUnico
 // Asegúrate de que la ruta a tu componente de diálogo es correcta
-import ConfirmDialog from '../components/Confirmardialogo.vue';
+import ConfirmDialog from '../components/confirmar_dialogo.vue';
 
 // Para el formulario de Vuetify. Permite acceder a métodos como `validate()` y `resetValidation()`.
 const form = ref<HTMLFormElement | null>(null);
 
-const proyectos = ref<any[]>([])
-const empresas = ref<any[]>([])   // <- listado de empresas
+interface Proyecto {
+  id: number;
+  nombre: string;
+  empresa: {
+    id: number;
+    nombre: string;
+  };
+}
+
+const proyectos = ref<Proyecto[]>([])
+interface Empresa {
+  id: number;
+  nombre: string;
+}
+
+const empresas = ref<Empresa[]>([]);   // <- listado de empresas
 const nombre = ref('')
 const empresa_id = ref<number | null>(null)
 
@@ -206,7 +221,7 @@ async function validateNombreProyectoUnico(value: string) {
 async function cargarProyectos() {
   try {
     proyectos.value = await obtenerProyectos()
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error al cargar proyectos:', error)
     snackbar.value = {
       show: true,
@@ -297,10 +312,10 @@ async function handleConfirmAction() {
       }
     }
     resetForm();
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error en handleConfirmAction:', err);
     // El servicio ahora lanza un Error simple con el mensaje
-    const errorMessage = err.message || 'Error al procesar la operación del proyecto. Intenta de nuevo más tarde.';
+    const errorMessage = (err instanceof Error ? err.message : 'Error al procesar la operación del proyecto. Intenta de nuevo más tarde.');
     snackbar.value = { show: true, message: errorMessage, color: 'error' };
 
     // Si el error es específicamente por unicidad del nombre (el mensaje que tu backend devuelve)
@@ -316,7 +331,7 @@ async function handleConfirmAction() {
 }
 
 // Función para editar un proyecto
-function editProyecto(proyecto: any) {
+function editProyecto(proyecto: Proyecto) {
   isEditing.value = true;
   editingProyectoId.value = proyecto.id;
   nombre.value = proyecto.nombre;
@@ -402,7 +417,7 @@ const filteredProyectos = computed(() => {
       if (typeof valA === 'string' && typeof valB === 'string') {
         return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
       } else {
-        return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
+        return sortOrder === 'asc' ? (Number(valA) - Number(valB)) : (Number(valB) - Number(valA));
       }
     });
   }
@@ -410,15 +425,13 @@ const filteredProyectos = computed(() => {
 });
 
 // Helper function to get nested object values
-function getValueByKey(obj: any, key: string): any {
-  return key.split('.').reduce((o, i) => (o ? o[i] : undefined), obj);
+function getValueByKey(obj: Record<string, unknown>, key: string): unknown {
+  return key.split('.').reduce<Record<string, unknown> | undefined>((o, i) => (o && typeof o === 'object' && !Array.isArray(o) ? o[i] as Record<string, unknown> : undefined), obj);
 }
 
 // Funciones para ordenar la tabla
 // Ahora simplemente actualizan el `sortBy` y el computed `filteredProyectos` hará el resto.
-const sortByIdAsc = () => {
-  sortBy.value = [{ key: 'id', order: 'asc' }];
-};
+
 
 const sortByIdDesc = () => {
   sortBy.value = [{ key: 'id', order: 'desc' }];

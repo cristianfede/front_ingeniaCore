@@ -99,16 +99,15 @@
         :items="processedEmpresas" item-value="id"
         class="elevation-1"
       >
-        <template v-slot:item.id="{ item }">
-          {{ item.id }}
-        </template>
 
-        <template v-slot:item.estado="{ item }">
+        <!-- eslint-disable-next-line vue/valid-v-slot -->
+        <template #item.estado="{ item }">
           <v-chip :color="item.estado === 'activo' ? 'green' : 'red'" variant="flat" size="small">
             {{ item.estado === 'activo' ? 'Activa' : 'Inactiva' }}
           </v-chip>
         </template>
 
+        <!-- eslint-disable-next-line vue/valid-v-slot -->
         <template v-slot:item.actions="{ item }">
           <v-btn icon @click="editEmpresa(item)" class="mr-1" :disabled="item.estado === 'inactivo'">
             <v-icon color="primary">mdi-pencil</v-icon>
@@ -152,7 +151,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import { crearEmpresa, obtenerEmpresas, actualizarEmpresa, inactivarEmpresa, activarEmpresa, eliminarEmpresaPermanentemente, verificarNombreEmpresaUnico } from '../services/empresasService';
-import ConfirmDialog from '../components/Confirmardialogo.vue';
+import ConfirmDialog from '../components/confirmar_dialogo.vue';
 
 const nombre = ref('');
 const nit = ref('');
@@ -168,7 +167,9 @@ const snackbar = ref({
 const isEditing = ref(false);
 const editingEmpresaId = ref<number | null>(null);
 
-const empresaForm = ref<any>(null);
+import { VForm } from 'vuetify/components';
+
+const empresaForm = ref<InstanceType<typeof VForm> | null>(null);
 
 const showConfirmDialog = ref(false);
 const confirmDialogTitle = ref('');
@@ -180,7 +181,17 @@ type ActionType = 'create' | 'update' | 'inactivate' | 'activate' | 'delete_perm
 const currentAction = ref<ActionType | ''>('');
 const empresaToProcessId = ref<number | null>(null);
 
-const empresas = ref<any[]>([]);
+type Empresa = {
+  id: number;
+  nombre: string;
+  nit: string;
+  correo: string;
+  telefono: string;
+  estado: 'activo' | 'inactivo';
+  [key: string]: string | number | boolean; // Specify allowed types for dynamic properties
+};
+
+const empresas = ref<Empresa[]>([]);
 const search = ref('');
 const sortBy = ref<Array<{ key: string; order: 'asc' | 'desc' }>>([{ key: 'id', order: 'desc' }]);
 
@@ -197,10 +208,6 @@ const headers = [
   { title: 'Estado', key: 'estado', sortable: false },
   { title: 'Acciones', key: 'actions', sortable: false },
 ];
-
-const setSortOrder = (order: 'asc' | 'desc') => {
-  sortBy.value = [{ key: 'id', order: order }];
-};
 
 watch(filtroEstadoTabla, async (newVal) => {
   await cargarEmpresas(newVal);
@@ -225,7 +232,7 @@ async function cargarEmpresas(estadoFiltro?: string) {
 
 // processedEmpresas se encarga de filtrar Y ORDENAR
 const processedEmpresas = computed(() => {
-  let items = [...empresas.value]; 
+  let items = [...empresas.value];
 
   if (filtroEstadoTabla.value !== 'todos') {
     items = items.filter(e => e.estado === filtroEstadoTabla.value);
@@ -252,16 +259,16 @@ const processedEmpresas = computed(() => {
       if (typeof valA === 'string' && typeof valB === 'string') {
         return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
       } else {
-        return sortOrder === 'asc' ? (valA - valB) : (valB - valA);
+        return sortOrder === 'asc' ? (Number(valA) - Number(valB)) : (Number(valB) - Number(valA));
       }
     });
   }
-  
+
   return items;
 });
 
 
-function editEmpresa(empresa: any) {
+function editEmpresa(empresa: Empresa) {
   isEditing.value = true;
   editingEmpresaId.value = empresa.id;
   nombre.value = empresa.nombre;
@@ -275,7 +282,7 @@ function editEmpresa(empresa: any) {
 
 async function validateNombreUnico(value: string) {
   if (!value) return true;
-  
+
   if (isEditing.value && editingEmpresaId.value !== null) {
     const originalEmpresa = empresas.value.find(e => e.id === editingEmpresaId.value);
     if (originalEmpresa && originalEmpresa.nombre === value) {
@@ -293,6 +300,14 @@ async function validateNombreUnico(value: string) {
 }
 
 async function submit() {
+  if (!empresaForm.value) {
+    snackbar.value = {
+      show: true,
+      message: 'El formulario no está disponible.',
+      color: 'error',
+    };
+    return;
+  }
   const { valid } = await empresaForm.value.validate();
 
   if (!valid) {
@@ -357,13 +372,14 @@ async function handleConfirmAction() {
 
     await cargarEmpresas(filtroEstadoTabla.value);
     resetForm();
-  } catch (err: any) {
-    const errorMessage = err?.message || 'Error al procesar la operación.';
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Error al procesar la operación.';
     snackbar.value = { show: true, message: errorMessage, color: 'error' };
   } finally {
     showConfirmDialog.value = false;
     currentAction.value = '';
     empresaToProcessId.value = null;
+    console.log('Empresas cargadas:', empresas.value);
   }
 }
 
