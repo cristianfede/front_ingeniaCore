@@ -91,7 +91,14 @@ const metrics = ref({
   ticketsCerradosMes: 0,
   nuevosUsuarios: 0,
 });
-const actividadReciente = ref<any[]>([]);
+interface Actividad {
+  id: number;
+  evento: string;
+  fecha: string;
+  asignadoA?: string;
+}
+
+const actividadReciente = ref<Actividad[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
@@ -126,9 +133,13 @@ const fetchDashboardData = async () => {
       metrics.value = data.metrics;
       actividadReciente.value = data.actividadReciente;
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error fetching dashboard data:', err);
-    error.value = `Error al cargar datos: ${err.message || 'Ocurrió un error desconocido'}`;
+    if (err instanceof Error) {
+      error.value = `Error al cargar datos: ${err.message || 'Ocurrió un error desconocido'}`;
+    } else {
+      error.value = 'Error al cargar datos: Ocurrió un error desconocido';
+    }
   } finally {
     loading.value = false;
   }

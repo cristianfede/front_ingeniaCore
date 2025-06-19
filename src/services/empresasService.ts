@@ -158,10 +158,11 @@ export async function verificarNombreEmpresaUnico(nombre: string): Promise<boole
     }
     const data = await response.json();
     return data.isUnique; // Asume que el backend devuelve { isUnique: true/false }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error en verificarNombreEmpresaUnico:', error);
-    // Si hay un error de red o de servidor, asumimos que no es único para evitar duplicados.
-    // O podrías relanzar el error si quieres que el frontend lo maneje de forma diferente.
-    throw new Error(error.message || 'Error de conexión al verificar el nombre.');
+    if (error instanceof Error) {
+      throw new Error(error.message || 'Error de conexión al verificar el nombre.');
+    }
+    throw new Error('Error desconocido al verificar el nombre.');
   }
 }

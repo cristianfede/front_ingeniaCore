@@ -168,8 +168,8 @@ export async function obtenerTecnicos() { // O cambiar nombre a obtenerUsuariosT
       const errorData = await response.json();
       throw new Error(errorData.message || 'Error al obtener la lista de técnicos');
     }
-    return response.data; // Asumiendo que tu backend devuelve directamente el array de técnicos
-  } catch (error: any) {
+    return await response.json(); // Parseamos el JSON para obtener el array de técnicos
+  } catch (error: unknown) {
     console.error('Error al obtener la lista de técnicos:', error);
     throw error;
   }

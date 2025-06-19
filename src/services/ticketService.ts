@@ -292,7 +292,7 @@ export async function obtenerEmpresas() {
 }
 
 // ✅ Función crucial para obtener técnicos, ahora con manejo de autenticación
-export async function obtenerTecnicos(): Promise<{ id: number; nombres: string; apellido: string; rol?: { id: number; nombre: string } }[]> {
+export async function obtenerTecnicos(): Promise<{ id: number; nombre: string; apellido: string; rol?: { id: number; nombre: string } }[]> {
   try {
     const authStore = authSetStore();
     if (!authStore.token) {

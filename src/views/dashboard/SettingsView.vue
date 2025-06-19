@@ -294,9 +294,14 @@ const saveProfileSettings = async () => {
     // --- Fin Mock ---
 
     snackbar.value = { show: true, message: 'Perfil actualizado exitosamente.', color: 'success' };
-  } catch (error: any) {
-    console.error('Error al guardar el perfil:', error);
-    snackbar.value = { show: true, message: error.message || 'Error al actualizar el perfil.', color: 'error' };
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Error al guardar el perfil:', error);
+      snackbar.value = { show: true, message: error.message || 'Error al actualizar el perfil.', color: 'error' };
+    } else {
+      console.error('Error desconocido:', error);
+      snackbar.value = { show: true, message: 'Error desconocido al actualizar el perfil.', color: 'error' };
+    }
   }
 };
 

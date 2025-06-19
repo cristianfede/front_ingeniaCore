@@ -54,8 +54,8 @@
               <p><span class="font-medium info-label">Nombre Completo:</span> {{ authStore.user.nombre || 'N/A' }} {{ authStore.user.apellido || 'N/A' }} </p>
               <p><span class="font-medium info-label">Email:</span> {{ authStore.user.correo || 'N/A' }} </p>
               <p><span class="font-medium info-label">Teléfono:</span> {{ authStore.user.telefono || 'N/A' }} </p>
-              <p><span class="font-medium info-label">Creado el:</span> {{ formatDate(authStore.user.createdAt) }} </p>
-              <p><span class="font-medium info-label">Última Actualización:</span> {{ formatDate(authStore.user.updatedAt) }}</p>
+              <p><span class="font-medium info-label">Creado el:</span> {{ formatDate(authStore.user.createdAt || '') }} </p>
+              <p><span class="font-medium info-label">Última Actualización:</span> {{ formatDate(authStore.user.updatedAt || '') }}</p>
             </div>
           </div>
 

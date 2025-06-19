@@ -70,7 +70,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue' // 'computed' ya no es estrictamente necesario para el modo oscuro, pero se puede mantener si se usa para otras cosas
 import { useRouter } from 'vue-router'
 // import { useTheme } from 'vuetify' // Eliminada la importación de useTheme
 

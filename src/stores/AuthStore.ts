@@ -6,7 +6,26 @@ import { obtenerNotificaciones, marcarComoLeida, initializeSseConnection, closeS
 interface User {
   id: number;
   nombre: string;
+  apellido: string;
   email: string;
+  profilePictureUrl?: string;
+  rol?: { nombre: string };
+  tipoUsuario?: string;
+  correo?: string;
+  telefono?: string;
+  createdAt?: string;
+  updatedAt?: string;
+
+  empresa?: {
+
+    nombre: string;
+
+    nit: string;
+
+    correo: string;
+
+  };
+
   // Agrega aquí cualquier otra propiedad relevante de tu objeto de usuario
 }
 
@@ -16,6 +35,8 @@ interface Notification {
   mensaje: string;
   ticketId: number;
   leido: boolean;
+  estadoId: number;
+   // Agregado para incluir la propiedad estadoId
   // Agrega aquí cualquier otra propiedad relevante de tu objeto de notificación
 }
 
@@ -126,7 +147,7 @@ export const authSetStore = defineStore('auth', {
         await this.loadNotificationsFromApi(); // <-- Cambiado el nombre
         // 2. Inicia la conexión SSE (solo si no está ya activa)
         this.startSseConnection();
-        
+
         if (
           router.currentRoute.value.path === '/login' ||
           router.currentRoute.value.path === '/register'
@@ -141,7 +162,7 @@ export const authSetStore = defineStore('auth', {
     // --- LÓGICA DE NOTIFICACIONES ---
 
     // Este callback será llamado por NotificacionService cuando llegue una nueva notificación SSE.
-    handleNewSseNotification(notificationData: any) {
+    handleNewSseNotification(notificationData: { id: number; title: string; message: string; ticketId: number; statusId: number }) {
       console.log('AuthStore: Nueva notificación SSE recibida (para este usuario):', notificationData);
 
       // 1. Añade la nueva notificación al principio de la lista existente
@@ -170,22 +191,43 @@ export const authSetStore = defineStore('auth', {
         console.warn('AuthStore: No hay usuario para iniciar la conexión SSE.');
         return;
       }
+
       if (this.sseConnectionActive) {
         console.log('AuthStore: Conexión SSE ya activa para el usuario. No se reinicia.');
         return;
       }
 
       console.log('AuthStore: Intentando iniciar conexión SSE para usuario ID:', this.user.id);
+
       try {
-        // Inicializa la conexión SSE y pasa el callback
-        initializeSseConnection(this.user.id, this.handleNewSseNotification.bind(this));
-        this.sseConnectionActive = true; // Marca la bandera como activa
+        initializeSseConnection(this.user.id, (notificationData: {
+          id: number;
+          title: string;
+          message: string;
+          ticketId: number;
+          statusId: number;
+          userId: number;
+          timestamp: string;
+        }) => {
+          const transformedData = {
+            id: notificationData.id,
+            title: notificationData.title,
+            message: notificationData.message,
+            ticketId: notificationData.ticketId,
+            statusId: notificationData.statusId,
+          };
+          this.handleNewSseNotification(transformedData);
+        });
+
+        this.sseConnectionActive = true;
         console.log('AuthStore: Conexión SSE iniciada y activa.');
       } catch (error) {
         console.error('AuthStore: Error al iniciar conexión SSE:', error);
-        this.sseConnectionActive = false; // Si hay un error, asegura que la bandera esté en falso
+        this.sseConnectionActive = false;
       }
     },
+
+
 
     // Acción para CARGAR las notificaciones desde la API (NO para iniciar SSE)
     async loadNotificationsFromApi() { // <-- Nombre de acción cambiado para mayor claridad

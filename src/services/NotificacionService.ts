@@ -6,7 +6,17 @@ const SSE_URL = 'http://localhost:3333/api/notifications/stream' // <-- ¡Nueva 
 let eventSource: EventSource | null = null // Para almacenar la instancia de EventSource
 let currentUserId: number | null = null // Para el filtrado de notificaciones por usuario
 
-let onNewNotificationCallback: ((notificationData: any) => void) | null = null
+type NotificationData = {
+  id: number;
+  title: string;
+  message: string;
+  ticketId: number;
+  statusId: number;
+  userId: number;
+  timestamp: string;
+};
+
+let onNewNotificationCallback: ((notificationData: NotificationData) => void) | null = null
 
 /**
  * Obtener las notificaciones de un usuario
@@ -42,7 +52,8 @@ export async function marcarComoLeida(id: number) {
  * @param userId El ID del usuario actual para filtrar notificaciones.
  * @param callback Función a llamar cuando se recibe una nueva notificación.
  */
-export function initializeSseConnection(userId: number, callback: (notificationData: any) => void) {
+export function initializeSseConnection(userId: number, callback: (notificationData: NotificationData) => void)
+ {
   // Si ya hay una conexión abierta y activa para el mismo usuario, no hacer nada.
   if (eventSource && currentUserId === userId && eventSource.readyState === EventSource.OPEN) {
     console.log('NotificacionService: Conexión SSE ya establecida y abierta para el usuario:', userId)

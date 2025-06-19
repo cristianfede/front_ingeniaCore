@@ -26,36 +26,35 @@ type RolUpdateData = {
  */
 async function handleFetchResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    let errorData: any = {};
-    let errorMessage: string = '';
+    let errorData: Record<string, unknown> = {}
+    let errorMessage: string = ''
 
     try {
       // Intentar parsear el error como JSON
-      errorData = await response.json();
+      errorData = await response.json()
       // El backend ahora devuelve un objeto con 'message' en caso de conflicto
-      errorMessage = errorData.message || 'Error del servidor.';
-    } catch (e) {
+      errorMessage = (errorData as { message?: string }).message || 'Error del servidor.'
+    } catch {
       // Si no es JSON o hay un error al parsear, obtener el texto o un mensaje genérico
-      errorMessage = await response.text();
+      errorMessage = await response.text()
       if (!errorMessage) {
-        errorMessage = `Error de red o respuesta no JSON. Estado: ${response.status} ${response.statusText}`;
+        errorMessage = `Error de red o respuesta no JSON. Estado: ${response.status} ${response.statusText}`
       }
     }
 
     // Lanza un error con un mensaje simple
-    throw new Error(errorMessage);
+    throw new Error(errorMessage)
   }
 
   // Si la respuesta es 204 No Content, response.json() fallará.
   // Es mejor verificar si hay contenido antes de intentar parsear.
-  const contentType = response.headers.get('content-type');
+  const contentType = response.headers.get('content-type')
   if (contentType && contentType.includes('application/json')) {
-    return response.json();
+    return response.json()
   }
   // Si no es JSON (ej. 204 No Content), devolvemos un objeto vacío
-  return {} as T;
+  return {} as T
 }
-
 
 /**
  * Obtiene todos los roles desde la API.
@@ -70,11 +69,16 @@ export async function obtenerRoles(): Promise<Rol[]> {
         // 'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
     })
-    return await handleFetchResponse<Rol[]>(response);
-  } catch (error: any) {
-    console.error('Error al obtener roles:', error);
-    // Propaga el mensaje de error directamente
-    throw new Error(error.message || 'Error desconocido al obtener roles');
+    return await handleFetchResponse<Rol[]>(response)
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Error al obtener roles:', error)
+      // Propaga el mensaje de error directamente
+      throw new Error(error.message || 'Error desconocido al obtener roles')
+    } else {
+      console.error('Error inesperado:', error)
+      throw new Error('Error desconocido al obtener roles')
+    }
   }
 }
 
@@ -82,7 +86,11 @@ export async function obtenerRoles(): Promise<Rol[]> {
  * Crea un nuevo rol.
  * Corresponde a POST /api/roles
  */
-export async function crearRol(rolData: { nombre: string; descripcion?: string | null; estado?: 'activo' | 'inactivo' }): Promise<Rol> {
+export async function crearRol(rolData: {
+  nombre: string
+  descripcion?: string | null
+  estado?: 'activo' | 'inactivo'
+}): Promise<Rol> {
   try {
     const response = await fetch(`${API_BASE_URL}/roles`, {
       method: 'POST',
@@ -92,11 +100,16 @@ export async function crearRol(rolData: { nombre: string; descripcion?: string |
       },
       body: JSON.stringify(rolData),
     })
-    return await handleFetchResponse<Rol>(response);
-  } catch (error: any) {
-    console.error('Error al crear rol:', error);
-    // Propaga el mensaje de error directamente
-    throw new Error(error.message || 'Error desconocido al crear rol');
+    return await handleFetchResponse<Rol>(response)
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Error al crear rol:', error)
+      // Propaga el mensaje de error directamente
+      throw new Error(error.message || 'Error desconocido al crear rol')
+    } else {
+      console.error('Error inesperado:', error)
+      throw new Error('Error desconocido al crear rol')
+    }
   }
 }
 
@@ -114,11 +127,16 @@ export async function actualizarRol(id: number, rolData: RolUpdateData): Promise
       },
       body: JSON.stringify(rolData),
     })
-    return await handleFetchResponse<Rol>(response);
-  } catch (error: any) {
-    console.error(`Error al actualizar rol con ID ${id}:`, error);
-    // Propaga el mensaje de error directamente
-    throw new Error(error.message || `Error desconocido al actualizar rol con ID ${id}`);
+    return await handleFetchResponse<Rol>(response)
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error(`Error al actualizar rol con ID ${id}:`, error)
+      // Propaga el mensaje de error directamente
+      throw new Error(error.message || `Error desconocido al actualizar rol con ID ${id}`)
+    } else {
+      console.error(`Error inesperado al actualizar rol con ID ${id}:`, error)
+      throw new Error(`Error desconocido al actualizar rol con ID ${id}`)
+    }
   }
 }
 
@@ -137,50 +155,62 @@ export async function eliminarRolPermanentemente(id: number): Promise<void> {
     })
 
     if (!response.ok) {
-        let errorData: any = {};
-        let errorMessage: string = '';
-        try {
-            errorData = await response.json();
-            errorMessage = errorData.message || 'Error del servidor.';
-        } catch (e) {
-            errorMessage = await response.text();
-            if (!errorMessage) {
-              errorMessage = `Error de red o respuesta no JSON. Estado: ${response.status} ${response.statusText}`;
-            }
+      let errorData: Record<string, unknown> = {}
+      let errorMessage: string = ''
+      try {
+        errorData = await response.json()
+        errorMessage = (errorData as { message?: string }).message || 'Error del servidor.'
+      } catch {
+        errorMessage = await response.text()
+        if (!errorMessage) {
+          errorMessage = `Error de red o respuesta no JSON. Estado: ${response.status} ${response.statusText}`
         }
-        throw new Error(errorMessage);
+      }
+      throw new Error(errorMessage)
     }
-    return; // No hay datos que devolver para una eliminación 204
-  } catch (error: any) {
-    console.error(`Error al eliminar rol permanentemente con ID ${id}:`, error);
-    throw new Error(error.message || `Error desconocido al eliminar rol con ID ${id}`);
+    return // No hay datos que devolver para una eliminación 204
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error(`Error al eliminar rol permanentemente con ID ${id}:`, error)
+      throw new Error(error.message || `Error desconocido al eliminar rol con ID ${id}`)
+    } else {
+      console.error(`Error inesperado al eliminar rol permanentemente con ID ${id}:`, error)
+      throw new Error(`Error desconocido al eliminar rol con ID ${id}`)
+    }
   }
 }
 
 // NUEVA FUNCIÓN para verificar unicidad del nombre del rol
-export async function verificarNombreRolUnico(nombre: string, excludeId?: number): Promise<boolean> {
+export async function verificarNombreRolUnico(
+  nombre: string,
+  excludeId?: number,
+): Promise<boolean> {
   try {
-    let url = `${API_BASE_URL}/roles/check-unique-name?name=${encodeURIComponent(nombre)}`;
+    let url = `${API_BASE_URL}/roles/check-unique-name?name=${encodeURIComponent(nombre)}`
     if (excludeId) {
-      url += `&excludeId=${excludeId}`;
+      url += `&excludeId=${excludeId}`
     }
 
-    const response = await fetch(url);
+    const response = await fetch(url)
     if (!response.ok) {
       // Si el backend devuelve 409 (Conflict), significa que el nombre ya existe.
       if (response.status === 409) {
-        return false; // Nombre ya existe
+        return false // Nombre ya existe
       }
       // Para cualquier otro error HTTP que no sea 409, lanzamos un error.
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Error al verificar unicidad del nombre del rol');
+      const errorData = await response.json()
+      throw new Error(errorData.message || 'Error al verificar unicidad del nombre del rol')
     }
-    const data = await response.json();
-    return data.isUnique; // Asume que el backend devuelve { isUnique: true/false }
-  } catch (error: any) {
-    console.error('Error en verificarNombreRolUnico:', error);
-    // Si hay un error de red o de servidor, asumimos que no es único para evitar duplicados.
-    throw new Error(error.message || 'Error de conexión al verificar el nombre del rol.');
+    const data = await response.json()
+    return data.isUnique // Asume que el backend devuelve { isUnique: true/false }
+  } catch (error: unknown) {
+    console.error('Error en verificarNombreRolUnico:', error)
+    if (error instanceof Error) {
+      // Si hay un error de red o de servidor, asumimos que no es único para evitar duplicados.
+      throw new Error(error.message || 'Error de conexión al verificar el nombre del rol.')
+    } else {
+      throw new Error('Error desconocido al verificar el nombre del rol.')
+    }
   }
 }
 
@@ -195,15 +225,19 @@ export async function inactivarRol(id: number): Promise<void> {
         'Content-Type': 'application/json',
         // 'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
-    });
+    })
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Error al inactivar rol');
+      const errorData = await response.json()
+      throw new Error(errorData.message || 'Error al inactivar rol')
     }
-    return; // 204 No Content
-  } catch (error: any) {
-    console.error(`Error al inactivar rol con ID ${id}:`, error);
-    throw new Error(error.message || `Error desconocido al inactivar rol con ID ${id}`);
+    return // 204 No Content
+  } catch (error: unknown) {
+    console.error(`Error al inactivar rol con ID ${id}:`, error)
+    if (error instanceof Error) {
+      throw new Error(error.message || `Error desconocido al inactivar rol con ID ${id}`)
+    } else {
+      throw new Error(`Error inesperado al inactivar rol con ID ${id}`)
+    }
   }
 }
 
@@ -215,14 +249,18 @@ export async function activarRol(id: number): Promise<void> {
         'Content-Type': 'application/json',
         // 'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
-    });
+    })
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Error al activar rol');
+      const errorData = await response.json()
+      throw new Error(errorData.message || 'Error al activar rol')
     }
-    return; // 204 No Content
-  } catch (error: any) {
-    console.error(`Error al activar rol con ID ${id}:`, error);
-    throw new Error(error.message || `Error desconocido al activar rol con ID ${id}`);
+    return // 204 No Content
+  } catch (error: unknown) {
+    console.error(`Error al activar rol con ID ${id}:`, error)
+    if (error instanceof Error) {
+      throw new Error(error.message || `Error desconocido al activar rol con ID ${id}`)
+    } else {
+      throw new Error(`Error inesperado al activar rol con ID ${id}`)
+    }
   }
 }
