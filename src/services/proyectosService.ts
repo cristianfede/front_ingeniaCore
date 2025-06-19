@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://localhost:3333/api'; // <--- Añadido 'export' aquí
+export const API_BASE_URL = 'http://147.93.114.138:8280/api'; // <--- Añadido 'export' aquí
 
 /**
  * Obtiene todos los proyectos.

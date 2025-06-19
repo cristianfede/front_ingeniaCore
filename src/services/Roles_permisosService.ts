@@ -2,7 +2,7 @@
 
 import axios from 'axios'; // Usaremos axios por ser más estándar en Vue/Adonis
 
-const API_URL = 'http://localhost:3333/api';
+const API_URL = 'http://147.93.114.138:8280/api';
 
 // --- ¡TODAS estas interfaces necesitan 'export' para ser importables! ---
 export interface Usuario {

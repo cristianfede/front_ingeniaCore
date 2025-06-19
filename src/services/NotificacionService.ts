@@ -1,7 +1,7 @@
 // src/services/notificacionService.ts
 
-const BASE_URL = 'http://localhost:3333/api/notificaciones'
-const SSE_URL = 'http://localhost:3333/api/notifications/stream' // <-- ¡Nueva URL para SSE!
+const BASE_URL = 'http://147.93.114.138:8280/api/notificaciones'
+const SSE_URL = 'http://147.93.114.138:8280/api/notifications/stream' // <-- ¡Nueva URL para SSE!
 
 let eventSource: EventSource | null = null // Para almacenar la instancia de EventSource
 let currentUserId: number | null = null // Para el filtrado de notificaciones por usuario

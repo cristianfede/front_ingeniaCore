@@ -1,6 +1,6 @@
 // src/services/PermisosService.ts
 
-const API_BASE_URL = 'http://localhost:3333/api';
+const API_BASE_URL = 'http://147.93.114.138:8280/api';
 
 interface Permiso {
   id: number;

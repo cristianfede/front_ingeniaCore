@@ -1,6 +1,6 @@
 import { authSetStore } from '@/stores/AuthStore'; // Necesitamos el AuthStore para obtener el token
 
-const API_BASE_URL = 'http://localhost:3333/api'; // <--- ASEGÚRATE DE QUE ESTA URL SEA CORRECTA
+const API_BASE_URL = 'http://147.93.114.138:8280/api'; // <--- ASEGÚRATE DE QUE ESTA URL SEA CORRECTA
 
 /**
  * Define las interfaces para la estructura de datos que esperamos del backend

@@ -5,7 +5,7 @@ import { authSetStore } from '@/stores/AuthStore'; // Importa el AuthStore para 
 // Define la URL base de tu API de AdonisJS
 // IMPORTANTE: Asegúrate de que esta URL sea correcta.
 // Para el login, la ruta parece ser directamente en la raíz, no bajo /api
-const API_BASE_URL = 'http://localhost:3333';
+const API_BASE_URL = 'http://147.93.114.138:8280/login';
 
 export default class AuthService {
   /**

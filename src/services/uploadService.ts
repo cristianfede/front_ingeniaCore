@@ -3,7 +3,7 @@ export async function uploadFile(file: File) {
   formData.append('file', file)
 
 
-  const response = await fetch('http://localhost:3333/upload', {
+  const response = await fetch('http://147.93.114.138:8280/upload', {
     method: 'POST',
     body: formData,
     credentials: 'include', // si usas cookies para sesión

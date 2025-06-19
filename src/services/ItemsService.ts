@@ -1,6 +1,6 @@
 // src/services/ItemsService.ts
 
-const ITEMS_API_URL = 'http://localhost:3333/api/items'; // ¡Asegúrate que este prefijo coincida con tus rutas de AdonisJS!
+const ITEMS_API_URL = 'http://147.93.114.138:8280/api/items'; // ¡Asegúrate que este prefijo coincida con tus rutas de AdonisJS!
 
 interface Item {
   id: number;

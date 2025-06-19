@@ -1,6 +1,6 @@
 // src/services/RolesService.ts
 
-const ROLES_API_URL = 'http://localhost:3333/api/roles'; // ¡Asegúrate que este prefijo coincida con tus rutas de AdonisJS!
+const ROLES_API_URL = 'http://147.93.114.138:8280/api/roles'; // ¡Asegúrate que este prefijo coincida con tus rutas de AdonisJS!
 
 interface Rol {
   id: number;

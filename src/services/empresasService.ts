@@ -1,7 +1,7 @@
 // src/services/empresasService.ts
 
 // --- ¡DEFINICIÓN DE API_BASE_URL AQUÍ! ---
-const API_BASE_URL = 'http://localhost:3333/api' // Asegúrate de que esta URL sea correcta
+const API_BASE_URL = 'http://147.93.114.138:8280/api' // Asegúrate de que esta URL sea correcta
 
 interface EmpresaData {
   nombre: string

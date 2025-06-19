@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Define la URL base de tu API de AdonisJS
-const API_URL = 'http://localhost:3333/api'; // ¡Asegúrate de que esta sea tu URL correcta!
+const API_URL = 'http://147.93.114.138:8280/api'; // ¡Asegúrate de que esta sea tu URL correcta!
 
 // Interfaz para los datos de una empresa
 interface EmpresaData {

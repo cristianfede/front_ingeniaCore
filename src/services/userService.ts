@@ -1,6 +1,6 @@
 // src/services/userService.ts
 
-const API_BASE_URL = 'http://localhost:3333'
+const API_BASE_URL = 'http://147.93.114.138:8280'
 
 // --- Interfaz de datos para Usuario (actualizada y corregida para nombres de campos) ---
 interface UsuarioData {

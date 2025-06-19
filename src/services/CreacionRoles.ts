@@ -1,7 +1,7 @@
 // src/services/CreacionRoles.ts
 
 // Define la URL base de tu API de AdonisJS
-const API_BASE_URL = 'http://localhost:3333/api' // URL base para todos los endpoints
+const API_BASE_URL = 'http://147.93.114.138:8280/api' // URL base para todos los endpoints
 
 // Define la interfaz para la estructura de un rol
 export interface Rol {
