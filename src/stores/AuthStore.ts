@@ -191,31 +191,43 @@ export const authSetStore = defineStore('auth', {
         console.warn('AuthStore: No hay usuario para iniciar la conexión SSE.');
         return;
       }
+
       if (this.sseConnectionActive) {
         console.log('AuthStore: Conexión SSE ya activa para el usuario. No se reinicia.');
         return;
       }
 
       console.log('AuthStore: Intentando iniciar conexión SSE para usuario ID:', this.user.id);
+
       try {
-        // Inicializa la conexión SSE y pasa el callback
-        initializeSseConnection(this.user.id, (data: { userId: number; message: string; timestamp: string }) => {
+        initializeSseConnection(this.user.id, (notificationData: {
+          id: number;
+          title: string;
+          message: string;
+          ticketId: number;
+          statusId: number;
+          userId: number;
+          timestamp: string;
+        }) => {
           const transformedData = {
-            id: 0, // Replace with actual logic to derive `id`
-            title: 'Default Title', // Replace with actual logic to derive `title`
-            message: data.message,
-            ticketId: 0, // Replace with actual logic to derive `ticketId`
-            statusId: 0, // Replace with actual logic to derive `statusId`
+            id: notificationData.id,
+            title: notificationData.title,
+            message: notificationData.message,
+            ticketId: notificationData.ticketId,
+            statusId: notificationData.statusId,
           };
           this.handleNewSseNotification(transformedData);
         });
-        this.sseConnectionActive = true; // Marca la bandera como activa
+
+        this.sseConnectionActive = true;
         console.log('AuthStore: Conexión SSE iniciada y activa.');
       } catch (error) {
         console.error('AuthStore: Error al iniciar conexión SSE:', error);
-        this.sseConnectionActive = false; // Si hay un error, asegura que la bandera esté en falso
+        this.sseConnectionActive = false;
       }
     },
+
+
 
     // Acción para CARGAR las notificaciones desde la API (NO para iniciar SSE)
     async loadNotificationsFromApi() { // <-- Nombre de acción cambiado para mayor claridad

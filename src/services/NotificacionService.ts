@@ -7,8 +7,12 @@ let eventSource: EventSource | null = null // Para almacenar la instancia de Eve
 let currentUserId: number | null = null // Para el filtrado de notificaciones por usuario
 
 type NotificationData = {
-  userId: number;
+  id: number;
+  title: string;
   message: string;
+  ticketId: number;
+  statusId: number;
+  userId: number;
   timestamp: string;
 };
 
@@ -48,7 +52,8 @@ export async function marcarComoLeida(id: number) {
  * @param userId El ID del usuario actual para filtrar notificaciones.
  * @param callback Función a llamar cuando se recibe una nueva notificación.
  */
-export function initializeSseConnection(userId: number, callback: (notificationData: { userId: number; message: string; timestamp: string }) => void) {
+export function initializeSseConnection(userId: number, callback: (notificationData: NotificationData) => void)
+ {
   // Si ya hay una conexión abierta y activa para el mismo usuario, no hacer nada.
   if (eventSource && currentUserId === userId && eventSource.readyState === EventSource.OPEN) {
     console.log('NotificacionService: Conexión SSE ya establecida y abierta para el usuario:', userId)
